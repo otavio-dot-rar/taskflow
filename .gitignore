@@ -1,7 +1,7 @@
-# See https://help.github.com/articles/ignoring-files/ for more about ignoring files.
+# 🎯 TaskFlow - Electron + Next.js .gitignore
 
-# dependencies
-/node_modules
+# ===== DEPENDENCIES =====
+node_modules/
 /.pnp
 .pnp.*
 .yarn/*
@@ -10,32 +10,121 @@
 !.yarn/releases
 !.yarn/versions
 
-# testing
-/coverage
+# ===== BUILD OUTPUTS =====
+# Main build directory (compiled TypeScript + Next.js)
+/dist/
 
-# next.js
+# Next.js build outputs
 /.next/
 /out/
+/frontend/.next/
+/frontend/out/
 
-# production
+# TypeScript build info
+*.tsbuildinfo
+next-env.d.ts
+
+# Production builds
 /build
+/packaged/
 
-# misc
-.DS_Store
-*.pem
+# ===== ELECTRON SPECIFIC =====
+# Electron builder outputs
+/dist-electron/
+/release/
+/app/
+*.dmg
+*.exe
+*.AppImage
+*.snap
+*.deb
+*.rpm
+*.tar.gz
 
-# debug
+# ===== DEVELOPMENT =====
+# Logs
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 .pnpm-debug.log*
+*.log
 
-# env files (can opt-in for committing if needed)
+# Runtime data
+pids
+*.pid
+*.seed
+*.pid.lock
+
+# Coverage directory used by tools like istanbul
+/coverage
+*.lcov
+
+# ===== ENVIRONMENT & CONFIG =====
+# Environment files
 .env*
+!.env.example
 
-# vercel
+# IDE and Editor files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# ===== SYSTEM FILES =====
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+Icon?
+._*
+
+# Windows
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+
+# Linux
+*~
+.directory
+
+# ===== TEMPORARY FILES =====
+# Temporary folders
+tmp/
+temp/
+.tmp/
+
+# Cache directories
+.cache/
+.parcel-cache/
+
+# ===== TESTING =====
+/coverage
+.nyc_output
+
+# ===== DEPLOYMENT =====
 .vercel
 
-# typescript
-*.tsbuildinfo
-next-env.d.ts
+# ===== CERTIFICATES & KEYS =====
+*.pem
+*.key
+*.crt
+*.p12
+*.pfx
+
+# ===== BACKUP FILES =====
+*.bak
+*.backup
+*.old
+*.orig
+
+# ===== PACKAGE MANAGERS =====
+# pnpm
+.pnpm-debug.log*
+
+# npm
+package-lock.json
+
+# yarn
+yarn.lock
