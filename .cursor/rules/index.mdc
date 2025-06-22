@@ -1,0 +1,50 @@
+---
+description: 
+globs: 
+alwaysApply: false
+---
+# Cursor TaskFlow - Regras de Desenvolvimento
+
+Este projeto é uma aplicação desktop construída com **Electron + Next.js + TypeScript** para visualizar e gerenciar regras do Cursor em formato `.mdc` através de uma interface kanban.
+
+## Arquitetura do Projeto
+
+O projeto segue uma arquitetura de **dual-process** típica do Electron:
+
+- **Main Process (Backend):** [src-main/](mdc:src-main) - Processo Node.js com acesso ao sistema de arquivos
+- **Renderer Process (Frontend):** [src-renderer/](mdc:src-renderer) - Interface React/Next.js
+
+### Documentação Técnica Detalhada
+
+- [🏗️ Arquitetura e Stack](mdc:architecture.mdc) - Detalhes técnicos da arquitetura Electron + Next.js
+- [📁 Estrutura de Arquivos](mdc:file-structure.mdc) - Organização e convenções de diretórios
+- [🔧 Configuração de Desenvolvimento](mdc:development-setup.mdc) - Scripts, dependências e ambiente de dev
+- [🎨 Padrões de UI/UX](mdc:ui-patterns.mdc) - Componentes shadcn/ui e padrões visuais
+- [📡 Comunicação IPC](mdc:ipc-communication.mdc) - Inter-Process Communication entre main e renderer
+- [🗂️ Gerenciamento de Estado](mdc:state-management.mdc) - Padrões para estado da aplicação
+
+## Regras de Negócio e Funcionalidades
+
+- [📋 Plano de Desenvolvimento MVP](mdc:mvp-development.mdc) - Fases, etapas e tarefas do MVP
+- [📄 Formato de Dados .mdc](mdc:mdc-format.mdc) - Estrutura e parsing de arquivos .mdc
+- [🎯 Funcionalidades do Kanban](mdc:kanban-features.mdc) - Drag & drop, edição e persistência
+
+## Status Atual
+
+✅ **Fase 0 Completa:** Fundação Electron + Next.js funcionando
+🔄 **Próxima:** Fase 1 - Implementação de leitura e visualização de arquivos .mdc
+
+## Comandos Essenciais
+
+```bash
+# Desenvolvimento
+pnpm dev              # Inicia Next.js + Electron simultaneamente
+pnpm build           # Build completo (Next.js + Electron)
+pnpm start           # Executa versão compilada
+
+# Específicos
+pnpm dev:next        # Apenas servidor Next.js
+pnpm dev:electron    # Apenas Electron (requer Next.js rodando)
+```
+
+

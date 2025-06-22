@@ -1,0 +1,568 @@
+---
+description: Specific Kanban functionalities, drag & drop, interactions - activate when implementing Kanban features
+globs: 
+alwaysApply: false
+---
+# Funcionalidades do Kanban
+
+## Visão Geral das Funcionalidades
+
+### Core Features (MVP)
+- ✅ **Visualização:** Kanban board com colunas por Fase
+- 🔄 **Drag & Drop:** Mover tarefas entre fases
+- 🔄 **Toggle Checkboxes:** Marcar tarefas como completas
+- 🔄 **Edição de Metadados:** Modal para ruleType e description
+- 🔄 **Persistência:** Salvar alterações nos arquivos .mdc
+
+### Future Features (Pós-MVP)
+- ❌ **Edição Inline:** Renomear tarefas diretamente
+- ❌ **Criar/Remover:** Adicionar novas tarefas via UI
+- ❌ **Auto-save:** Salvamento automático
+- ❌ **Filtros:** Por status, tipo, prioridade
+
+## Drag & Drop com @dnd-kit
+
+### Configuração Básica
+```typescript
+// src-renderer/components/KanbanBoard.tsx
+import {
+  DndContext,
+  closestCenter,
+  KeyboardSensor,
+  PointerSensor,
+  useSensor,
+  useSensors,
+} from '@dnd-kit/core';
+import {
+  sortableKeyboardCoordinates,
+} from '@dnd-kit/sortable';
+
+export function KanbanBoard() {
+  const { workspace } = useWorkspace();
+  const { handleDragStart, handleDragEnd } = useKanban();
+  
+  const sensors = useSensors(
+    useSensor(PointerSensor, {
+      activationConstraint: {
+        distance: 8, // Prevent accidental drags
+      },
+    }),
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates,
+    })
+  );
+
+  if (!workspace) return <EmptyState />;
+
+  return (
+    <DndContext
+      sensors={sensors}
+      collisionDetection={closestCenter}
+      onDragStart={handleDragStart}
+      onDragEnd={handleDragEnd}
+    >
+      <div className="flex h-full overflow-x-auto gap-6 p-6">
+        {workspace.files.map(file => (
+          <FileKanban key={file.filePath} file={file} />
+        ))}
+      </div>
+    </DndContext>
+  );
+}
+```
+
+### Droppable Columns
+```typescript
+// src-renderer/components/KanbanColumn.tsx
+import { useDroppable } from '@dnd-kit/core';
+
+interface KanbanColumnProps {
+  phase: Phase;
+  children: React.ReactNode;
+}
+
+export function KanbanColumn({ phase, children }: KanbanColumnProps) {
+  const { isOver, setNodeRef } = useDroppable({
+    id: phase.id,
+  });
+
+  return (
+    <Card
+      ref={setNodeRef}
+      className={cn(
+        "min-w-[300px] max-w-[350px] flex flex-col",
+        isOver && "ring-2 ring-primary ring-offset-2"
+      )}
+    >
+      <CardHeader className="pb-3">
+        <div className="flex items-center justify-between">
+          <CardTitle className="text-sm font-medium">
+            {phase.name}
+          </CardTitle>
+          <Button variant="ghost" size="sm">
+            <Settings className="h-4 w-4" />
+          </Button>
+        </div>
+      </CardHeader>
+      <CardContent className="flex-1 space-y-2">
+        {children}
+      </CardContent>
+    </Card>
+  );
+}
+```
+
+### Draggable Task Cards
+```typescript
+// src-renderer/components/TaskCard.tsx
+import { useDraggable } from '@dnd-kit/core';
+
+interface TaskCardProps {
+  task: Task;
+  fileId: string;
+}
+
+export function TaskCard({ task, fileId }: TaskCardProps) {
+  const { toggleTask, toggleSubtask } = useTaskOperations();
+  
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    isDragging,
+  } = useDraggable({
+    id: task.id,
+  });
+
+  const style = transform ? {
+    transform: `translate3d(${transform.x}px, ${transform.y}px, 0)`,
+  } : undefined;
+
+  return (
+    <Card
+      ref={setNodeRef}
+      style={style}
+      className={cn(
+        "cursor-grab active:cursor-grabbing hover:shadow-md transition-shadow",
+        isDragging && "opacity-50 rotate-3 shadow-lg"
+      )}
+      {...listeners}
+      {...attributes}
+    >
+      <CardContent className="p-3">
+        <div className="flex items-start gap-2">
+          <Checkbox
+            checked={task.completed}
+            onCheckedChange={() => toggleTask(fileId, task.id)}
+            className="mt-0.5"
+            onClick={(e) => e.stopPropagation()} // Prevent drag when clicking checkbox
+          />
+          <div className="flex-1 space-y-2">
+            <p className={cn(
+              "text-sm",
+              task.completed && "line-through text-muted-foreground"
+            )}>
+              {task.text}
+            </p>
+            
+            {task.subtasks.length > 0 && (
+              <div className="space-y-1 pl-2 border-l-2 border-border">
+                {task.subtasks.map(subtask => (
+                  <SubTaskItem
+                    key={subtask.id}
+                    subtask={subtask}
+                    onToggle={() => toggleSubtask(fileId, task.id, subtask.id)}
+                  />
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
+```
+
+## Checkpoint System (Estados de Tarefa)
+
+### Task States
+```typescript
+type TaskState = 'pending' | 'in-progress' | 'completed' | 'blocked';
+
+interface TaskWithState extends Task {
+  state: TaskState;
+  progress?: number; // 0-100 for subtasks
+}
+
+// Auto-calculate state based on subtasks
+function calculateTaskState(task: Task): TaskState {
+  if (task.completed) return 'completed';
+  
+  if (task.subtasks.length === 0) return 'pending';
+  
+  const completedSubtasks = task.subtasks.filter(st => st.completed).length;
+  const totalSubtasks = task.subtasks.length;
+  
+  if (completedSubtasks === 0) return 'pending';
+  if (completedSubtasks === totalSubtasks) return 'completed';
+  return 'in-progress';
+}
+```
+
+### Progress Indicators
+```typescript
+// src-renderer/components/TaskProgress.tsx
+interface TaskProgressProps {
+  task: Task;
+}
+
+export function TaskProgress({ task }: TaskProgressProps) {
+  const completed = task.subtasks.filter(st => st.completed).length;
+  const total = task.subtasks.length;
+  const progress = total > 0 ? (completed / total) * 100 : 0;
+
+  return (
+    <div className="space-y-1">
+      <div className="flex justify-between text-xs text-muted-foreground">
+        <span>Progresso</span>
+        <span>{completed}/{total}</span>
+      </div>
+      <div className="w-full bg-secondary rounded-full h-1.5">
+        <div
+          className="bg-primary h-1.5 rounded-full transition-all"
+          style={{ width: `${progress}%` }}
+        />
+      </div>
+    </div>
+  );
+}
+```
+
+## Modal de Configurações
+
+### Settings Modal Component
+```typescript
+// src-renderer/components/SettingsModal.tsx
+import { useModal } from '@/hooks/useModal';
+import { useForm } from '@/hooks/useForm';
+
+interface SettingsModalProps {
+  file: WorkspaceFile;
+  onSave: (updates: Partial<WorkspaceFile>) => void;
+}
+
+export function SettingsModal({ file, onSave }: SettingsModalProps) {
+  const { isOpen, open, close } = useModal();
+  const { values, updateField, reset } = useForm({
+    ruleType: file.metadata.ruleType,
+    description: file.metadata.description,
+    priority: file.metadata.priority || 'medium',
+    tags: file.metadata.tags || [],
+  });
+
+  const handleSave = () => {
+    onSave({
+      metadata: {
+        ...file.metadata,
+        ...values,
+      }
+    });
+    close();
+    reset();
+  };
+
+  return (
+    <>
+      <Button variant="ghost" size="sm" onClick={open}>
+        <Settings className="h-4 w-4" />
+      </Button>
+
+      <Dialog open={isOpen} onOpenChange={close}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Configurações da Regra</DialogTitle>
+            <DialogDescription>
+              {file.fileName}
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-4">
+            <div>
+              <Label htmlFor="ruleType">Tipo da Regra</Label>
+              <Select
+                value={values.ruleType}
+                onValueChange={(value) => updateField('ruleType', value)}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Selecione o tipo" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="Manual">Manual</SelectItem>
+                  <SelectItem value="Auto">Auto</SelectItem>
+                  <SelectItem value="Generated">Generated</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div>
+              <Label htmlFor="description">Descrição</Label>
+              <Textarea
+                id="description"
+                value={values.description}
+                onChange={(e) => updateField('description', e.target.value)}
+                placeholder="Descrição da regra..."
+                className="min-h-[80px]"
+              />
+            </div>
+
+            <div>
+              <Label htmlFor="priority">Prioridade</Label>
+              <Select
+                value={values.priority}
+                onValueChange={(value) => updateField('priority', value)}
+              >
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="high">Alta</SelectItem>
+                  <SelectItem value="medium">Média</SelectItem>
+                  <SelectItem value="low">Baixa</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+
+          <DialogFooter>
+            <Button variant="outline" onClick={close}>
+              Cancelar
+            </Button>
+            <Button onClick={handleSave}>
+              Salvar Alterações
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </>
+  );
+}
+```
+
+## Visual Feedback
+
+### Drag States
+```typescript
+// Visual feedback durante drag
+const dragOverlay = (
+  <TaskCard
+    task={draggedTask}
+    fileId={draggedFileId}
+    className="rotate-3 shadow-xl opacity-90"
+  />
+);
+
+// Column highlight quando task está sobre ela
+const columnClasses = cn(
+  "min-w-[300px] transition-all duration-200",
+  isOver && "ring-2 ring-primary ring-offset-2 scale-105"
+);
+```
+
+### Loading States
+```typescript
+// src-renderer/components/KanbanSkeleton.tsx
+export function KanbanSkeleton() {
+  return (
+    <div className="flex gap-6 p-6">
+      {[1, 2, 3].map(i => (
+        <Card key={i} className="min-w-[300px]">
+          <CardHeader>
+            <Skeleton className="h-4 w-24" />
+          </CardHeader>
+          <CardContent className="space-y-2">
+            <Skeleton className="h-16 w-full" />
+            <Skeleton className="h-16 w-full" />
+            <Skeleton className="h-12 w-full" />
+          </CardContent>
+        </Card>
+      ))}
+    </div>
+  );
+}
+```
+
+### Error Boundaries
+```typescript
+// src-renderer/components/KanbanErrorBoundary.tsx
+import { ErrorBoundary } from 'react-error-boundary';
+
+function KanbanError({ error, resetErrorBoundary }) {
+  return (
+    <Card className="border-destructive">
+      <CardContent className="p-6 text-center">
+        <AlertCircle className="mx-auto h-8 w-8 text-destructive mb-4" />
+        <h3 className="text-lg font-medium mb-2">
+          Erro no Kanban Board
+        </h3>
+        <p className="text-sm text-muted-foreground mb-4">
+          {error.message}
+        </p>
+        <Button onClick={resetErrorBoundary} variant="outline">
+          Tentar Novamente
+        </Button>
+      </CardContent>
+    </Card>
+  );
+}
+
+export function KanbanWithErrorBoundary({ children }) {
+  return (
+    <ErrorBoundary FallbackComponent={KanbanError}>
+      {children}
+    </ErrorBoundary>
+  );
+}
+```
+
+## Keyboard Navigation
+
+### Keyboard Shortcuts
+```typescript
+// src-renderer/hooks/useKeyboardShortcuts.ts
+export function useKeyboardShortcuts() {
+  const { saveWorkspace } = useWorkspace();
+
+  useEffect(() => {
+    const handleKeyDown = (event: KeyboardEvent) => {
+      // Ctrl+S (Cmd+S on Mac) - Save
+      if ((event.ctrlKey || event.metaKey) && event.key === 's') {
+        event.preventDefault();
+        saveWorkspace();
+      }
+
+      // Escape - Close modals
+      if (event.key === 'Escape') {
+        // Close any open modals
+        document.dispatchEvent(new CustomEvent('close-modals'));
+      }
+    };
+
+    document.addEventListener('keydown', handleKeyDown);
+    return () => document.removeEventListener('keydown', handleKeyDown);
+  }, [saveWorkspace]);
+}
+```
+
+### Focus Management
+```typescript
+// Auto-focus em elementos drag and drop
+const { attributes, listeners } = useDraggable({
+  id: task.id,
+});
+
+// Combine with proper ARIA
+<Card
+  {...attributes}
+  {...listeners}
+  role="button"
+  tabIndex={0}
+  aria-label={`Tarefa: ${task.text}`}
+  onKeyDown={(e) => {
+    if (e.key === 'Enter' || e.key === ' ') {
+      // Trigger drag or toggle
+    }
+  }}
+>
+```
+
+## Performance Optimizations
+
+### Virtual Scrolling (Futuro)
+```typescript
+// Para listas grandes de tarefas
+import { FixedSizeList as List } from 'react-window';
+
+function VirtualTaskList({ tasks, itemHeight = 80 }) {
+  const Row = ({ index, style }) => (
+    <div style={style}>
+      <TaskCard task={tasks[index]} />
+    </div>
+  );
+
+  return (
+    <List
+      height={400}
+      itemCount={tasks.length}
+      itemSize={itemHeight}
+    >
+      {Row}
+    </List>
+  );
+}
+```
+
+### Memoization Strategy
+```typescript
+// Evitar re-renders desnecessários
+const TaskCard = memo(({ task, onToggle }) => {
+  // Component implementation
+}, areEqual);
+
+function areEqual(prevProps, nextProps) {
+  return (
+    prevProps.task.id === nextProps.task.id &&
+    prevProps.task.completed === nextProps.task.completed &&
+    prevProps.task.text === nextProps.task.text &&
+    JSON.stringify(prevProps.task.subtasks) === JSON.stringify(nextProps.task.subtasks)
+  );
+}
+```
+
+## Accessibility Features
+
+### ARIA Labels e Roles
+```typescript
+// Kanban board com proper ARIA
+<div
+  role="application"
+  aria-label="Kanban Board"
+  className="kanban-board"
+>
+  {phases.map(phase => (
+    <div
+      key={phase.id}
+      role="region"
+      aria-label={`Fase: ${phase.name}`}
+    >
+      {phase.items.map(item => (
+        <TaskCard
+          key={item.id}
+          task={item}
+          aria-describedby={`task-${item.id}-description`}
+        />
+      ))}
+    </div>
+  ))}
+</div>
+```
+
+### Screen Reader Support
+```typescript
+// Live region para feedback de mudanças
+<div
+  aria-live="polite"
+  aria-atomic="true"
+  className="sr-only"
+>
+  {announceMessage}
+</div>
+
+// Atualizar quando task muda de fase
+const handleDragEnd = (event) => {
+  // ... drag logic
+  setAnnounceMessage(`Tarefa "${task.text}" movida para ${newPhase.name}`);
+};
+```
+

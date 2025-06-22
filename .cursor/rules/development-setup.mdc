@@ -1,0 +1,219 @@
+---
+description: 
+globs: 
+alwaysApply: false
+---
+# Configuração de Desenvolvimento
+
+## Scripts Principais
+
+### Desenvolvimento Ativo
+```bash
+# Comando principal - inicia tudo
+pnpm dev
+
+# Equivale a executar simultaneamente:
+# 1. pnpm dev:next      (Next.js dev server)
+# 2. pnpm dev:wait-and-electron (Electron após Next.js estar pronto)
+```
+
+### Scripts Individuais
+```bash
+# Frontend apenas (Next.js)
+pnpm dev:next             # Porta 3000, modo turbo
+
+# Backend apenas (Electron) 
+pnpm dev:electron         # Requer Next.js rodando
+
+# Build completo
+pnpm build               # Next.js + Electron
+pnpm build:next          # Apenas Next.js static export
+pnpm build:electron      # Apenas TypeScript → JavaScript
+
+# Produção
+pnpm start               # Executa versão compilada
+pnpm pack                # Package sem distribuir
+pnpm dist                # Build final para distribuição
+```
+
+## Dependências Principais
+
+### Runtime Dependencies
+```json
+{
+  "class-variance-authority": "^0.7.1",    # shadcn/ui utility
+  "clsx": "^2.1.1",                       # CSS class utility  
+  "lucide-react": "^0.519.0",             # Icons shadcn/ui
+  "next": "15.3.4",                       # Framework UI
+  "react": "^19.0.0",                     # UI Library
+  "react-dom": "^19.0.0",                 # React DOM
+  "tailwind-merge": "^3.3.1"              # Tailwind utility
+}
+```
+
+### Development Dependencies
+```json
+{
+  "electron": "^36.5.0",                  # Desktop framework
+  "electron-builder": "^26.0.12",         # Packaging
+  "typescript": "^5",                     # Language
+  "tailwindcss": "^4",                   # CSS framework
+  "concurrently": "^9.1.2",             # Run parallel scripts
+  "cross-env": "^7.0.3",                # Cross-platform env vars
+  "wait-on": "^8.0.3"                   # Wait for services
+}
+```
+
+## Configuração do Ambiente
+
+### Node.js e pnpm
+```bash
+# Versões recomendadas
+node --version    # v18+ ou v20+
+pnpm --version    # 9.15.3+ (locked in package.json)
+
+# Instalação inicial
+pnpm install      # Instala todas as dependências
+```
+
+### TypeScript Configuration
+
+#### [tsconfig.json](mdc:tsconfig.json) (Raiz)
+```json
+{
+  "compilerOptions": {
+    "target": "ES2020",
+    "module": "commonjs",           # Electron compatibility
+    "moduleResolution": "node",
+    "esModuleInterop": true,
+    "allowSyntheticDefaultImports": true,
+    "strict": true,
+    "skipLibCheck": true,
+    "forceConsistentCasingInFileNames": true
+  },
+  "include": ["src-main/**/*"],
+  "exclude": ["node_modules", "dist-main", "src-renderer"]
+}
+```
+
+#### [src-renderer/tsconfig.json](mdc:src-renderer/tsconfig.json)
+```json
+{
+  "extends": "../tsconfig.json",
+  "compilerOptions": {
+    "target": "ES2017",
+    "lib": ["dom", "dom.iterable", "es6"],
+    "module": "esnext",             # Next.js compatibility
+    "jsx": "preserve",
+    "plugins": [{ "name": "next" }],
+    "paths": {
+      "@/*": ["./*"]               # Import aliases
+    }
+  },
+  "include": ["**/*", "../.next/types/**/*.ts"],
+  "exclude": ["node_modules"]
+}
+```
+
+## Processo de Desenvolvimento
+
+### 1. Desenvolvimento Normal
+```bash
+# Terminal 1 - Start development
+pnpm dev
+
+# O script executará automaticamente:
+# 1. Next.js dev server (localhost:3000)
+# 2. TypeScript compilation (src-main → dist-main)  
+# 3. Electron app (carrega localhost:3000)
+```
+
+### 2. Debug Mode
+```bash
+# Next.js com debug
+DEBUG=* pnpm dev:next
+
+# Electron com DevTools
+# DevTools abrem automaticamente em development (main.ts)
+```
+
+### 3. Build Testing
+```bash
+# Test build completo
+pnpm build
+pnpm start
+
+# Test apenas frontend
+pnpm build:next
+# Verificar src-renderer/out/
+```
+
+## Configurações Específicas
+
+### Next.js ([next.config.ts](mdc:src-renderer/next.config.ts))
+```typescript
+const nextConfig: NextConfig = {
+  output: "export",              # Static export para Electron
+  trailingSlash: true,          # Compatibility
+  distDir: "out",               # Output directory
+  // images: { unoptimized: true } # Se usar next/image
+}
+```
+
+### Tailwind CSS ([postcss.config.mjs](mdc:src-renderer/postcss.config.mjs))
+```javascript
+module.exports = {
+  plugins: {
+    '@tailwindcss/postcss': {},   # Tailwind v4 syntax
+  },
+}
+```
+
+### shadcn/ui ([components.json](mdc:components.json))
+```json
+{
+  "style": "new-york",           # Design system
+  "rsc": true,                   # React Server Components
+  "tailwind": {
+    "css": "src/app/globals.css",  # CSS file
+    "baseColor": "neutral",        # Color palette
+    "cssVariables": true          # CSS custom properties
+  }
+}
+```
+
+## Troubleshooting
+
+### ❌ Problema Conhecido: Hot Reload Excessivo
+**Sintoma:** Next.js compila dezenas de vezes por minuto
+**Causa:** Bug conhecido do Next.js 15 App Router
+**Workaround temporário:** Restartar `pnpm dev` quando ocorrer
+
+### ✅ Soluções Comuns
+
+```bash
+# Cache issues
+rm -rf src-renderer/.next
+rm -rf src-renderer/out  
+rm -rf dist-main
+pnpm dev
+
+# Dependency issues
+rm -rf node_modules
+rm pnpm-lock.yaml
+pnpm install
+
+# TypeScript issues
+# Verificar se todos os paths estão corretos
+# Verificar se dist-main/ foi compilado
+```
+
+### Port Conflicts
+Se porta 3000 estiver ocupada:
+```bash
+# Modificar package.json temporariamente
+"dev:next": "next dev src-renderer --port 3001 --turbo"
+
+# E main.ts URL correspondente (development)
+```
+

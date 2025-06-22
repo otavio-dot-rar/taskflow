@@ -1,0 +1,572 @@
+---
+description: React state management, Context API, custom hooks - activate when working with application state
+globs: 
+alwaysApply: false
+---
+# Gerenciamento de Estado com Zustand
+
+## Arquitetura de Estado
+
+### Separação de Responsabilidades
+- **Main Process:** Estado do sistema (arquivos, configurações)
+- **Renderer Process:** Estado da UI (workspace, drag & drop, modals)
+- **IPC Bridge:** Sincronização entre processos
+
+### Por que Zustand?
+- **Performance:** Menos re-renders que Context API
+- **Simplicidade:** Menor boilerplate
+- **TypeScript:** Excelente suporte nativo
+- **Devtools:** Integração com Redux DevTools
+- **Bundle size:** Apenas 2.5kb
+
+## Store Principal: Workspace
+
+### WorkspaceStore
+```typescript
+// src-renderer/stores/workspace-store.ts
+import { create } from 'zustand';
+import { devtools } from 'zustand/middleware';
+import { toast } from '@/components/ui/use-toast';
+
+interface WorkspaceFile {
+  filePath: string;
+  fileName: string;
+  metadata: {
+    ruleType: 'Manual' | 'Auto' | 'Generated';
+    description: string;
+    priority?: 'high' | 'medium' | 'low';
+    tags?: string[];
+  };
+  content: {
+    title?: string;
+    phases: Phase[];
+  };
+  lastModified: Date;
+  hasChanges?: boolean;
+}
+
+interface WorkspaceData {
+  projectPath: string;
+  files: WorkspaceFile[];
+  loadedAt: string;
+}
+
+interface Phase {
+  id: string;
+  name: string;
+  items: (Step | Task)[];
+}
+
+interface Step {
+  type: 'step';
+  id: string;
+  name: string;
+}
+
+interface Task {
+  type: 'task';
+  id: string;
+  text: string;
+  completed: boolean;
+  subtasks: SubTask[];
+  originalPhaseId: string;
+}
+
+interface SubTask {
+  id: string;
+  text: string;
+  completed: boolean;
+}
+
+interface WorkspaceState {
+  // Core state
+  workspace: WorkspaceData | null;
+  currentFile: WorkspaceFile | null;
+  
+  // UI state
+  loading: boolean;
+  error: string | null;
+  hasUnsavedChanges: boolean;
+  
+  // Actions
+  setWorkspace: (workspace: WorkspaceData) => void;
+  setCurrentFile: (file: WorkspaceFile | null) => void;
+  updateFile: (fileId: string, updates: Partial<WorkspaceFile>) => void;
+  setLoading: (loading: boolean) => void;
+  setError: (error: string | null) => void;
+  markUnsavedChanges: (hasChanges: boolean) => void;
+  
+  // Async actions
+  openProject: () => Promise<WorkspaceData | null>;
+  saveWorkspace: () => Promise<void>;
+  
+  // Task operations
+  toggleTask: (fileId: string, taskId: string) => void;
+  toggleSubtask: (fileId: string, taskId: string, subtaskId: string) => void;
+  moveTask: (taskId: string, fromPhaseId: string, toPhaseId: string) => void;
+}
+
+export const useWorkspaceStore = create<WorkspaceState>()(
+  devtools(
+    (set, get) => ({
+      // Initial state
+      workspace: null,
+      currentFile: null,
+      loading: false,
+      error: null,
+      hasUnsavedChanges: false,
+
+      // Basic setters
+      setWorkspace: (workspace) => 
+        set({ workspace, hasUnsavedChanges: false, error: null }, false, 'setWorkspace'),
+      
+      setCurrentFile: (currentFile) => 
+        set({ currentFile }, false, 'setCurrentFile'),
+      
+      setLoading: (loading) => 
+        set({ loading, error: loading ? null : get().error }, false, 'setLoading'),
+      
+      setError: (error) => 
+        set({ error, loading: false }, false, 'setError'),
+      
+      markUnsavedChanges: (hasUnsavedChanges) => 
+        set({ hasUnsavedChanges }, false, 'markUnsavedChanges'),
+
+      // File operations
+      updateFile: (fileId, updates) => {
+        const { workspace } = get();
+        if (!workspace) return;
+
+        const updatedFiles = workspace.files.map(file =>
+          file.filePath === fileId
+            ? { ...file, ...updates, hasChanges: true }
+            : file
+        );
+
+        set({
+          workspace: { ...workspace, files: updatedFiles },
+          hasUnsavedChanges: true,
+        }, false, 'updateFile');
+      },
+
+      // Async operations
+      openProject: async () => {
+        try {
+          set({ loading: true, error: null }, false, 'openProject/start');
+
+          const projectPath = await window.electronAPI.openProjectDialog();
+          if (!projectPath) {
+            set({ loading: false }, false, 'openProject/cancelled');
+            return null;
+          }
+
+          const workspaceData = await window.electronAPI.loadWorkspace(projectPath);
+          
+          set({ 
+            workspace: workspaceData, 
+            loading: false, 
+            hasUnsavedChanges: false,
+            error: null 
+          }, false, 'openProject/success');
+
+          toast({
+            title: "Projeto carregado",
+            description: `${workspaceData.files.length} arquivo(s) encontrados`,
+          });
+
+          return workspaceData;
+        } catch (error) {
+          const message = error instanceof Error ? error.message : 'Erro desconhecido';
+          set({ error: message, loading: false }, false, 'openProject/error');
+          
+          toast({
+            title: "Erro ao carregar projeto",
+            description: message,
+            variant: "destructive",
+          });
+          
+          throw error;
+        }
+      },
+
+      saveWorkspace: async () => {
+        const { workspace } = get();
+        if (!workspace) return;
+
+        try {
+          set({ loading: true, error: null }, false, 'saveWorkspace/start');
+
+          const result = await window.electronAPI.saveWorkspace(workspace);
+          
+          if (!result.success) {
+            throw new Error(result.message || 'Falha ao salvar');
+          }
+
+          // Mark all files as saved
+          const updatedFiles = workspace.files.map(file => ({
+            ...file,
+            hasChanges: false
+          }));
+
+          set({
+            workspace: { ...workspace, files: updatedFiles },
+            hasUnsavedChanges: false,
+            loading: false,
+          }, false, 'saveWorkspace/success');
+
+          toast({
+            title: "Projeto salvo",
+            description: result.message || "Todas as alterações foram salvas",
+          });
+        } catch (error) {
+          const message = error instanceof Error ? error.message : 'Erro ao salvar';
+          set({ error: message, loading: false }, false, 'saveWorkspace/error');
+          
+          toast({
+            title: "Erro ao salvar",
+            description: message,
+            variant: "destructive",
+          });
+          
+          throw error;
+        }
+      },
+
+      // Task operations
+      toggleTask: (fileId, taskId) => {
+        const { workspace, updateFile } = get();
+        if (!workspace) return;
+
+        const file = workspace.files.find(f => f.filePath === fileId);
+        if (!file) return;
+
+        const updatedPhases = file.content.phases.map(phase => ({
+          ...phase,
+          items: phase.items.map(item => 
+            item.type === 'task' && item.id === taskId
+              ? { ...item, completed: !item.completed }
+              : item
+          )
+        }));
+
+        updateFile(fileId, {
+          content: { ...file.content, phases: updatedPhases }
+        });
+      },
+
+      toggleSubtask: (fileId, taskId, subtaskId) => {
+        const { workspace, updateFile } = get();
+        if (!workspace) return;
+
+        const file = workspace.files.find(f => f.filePath === fileId);
+        if (!file) return;
+
+        const updatedPhases = file.content.phases.map(phase => ({
+          ...phase,
+          items: phase.items.map(item => {
+            if (item.type === 'task' && item.id === taskId) {
+              const updatedSubtasks = item.subtasks.map(subtask =>
+                subtask.id === subtaskId
+                  ? { ...subtask, completed: !subtask.completed }
+                  : subtask
+              );
+              
+              // Auto-complete task if all subtasks are completed
+              const allCompleted = updatedSubtasks.every(st => st.completed);
+              
+              return {
+                ...item,
+                subtasks: updatedSubtasks,
+                completed: updatedSubtasks.length > 0 ? allCompleted : item.completed
+              };
+            }
+            return item;
+          })
+        }));
+
+        updateFile(fileId, {
+          content: { ...file.content, phases: updatedPhases }
+        });
+      },
+
+      moveTask: (taskId, fromPhaseId, toPhaseId) => {
+        const { workspace } = get();
+        if (!workspace || fromPhaseId === toPhaseId) return;
+
+        // Find the file containing the task
+        for (const file of workspace.files) {
+          const fromPhase = file.content.phases.find(p => p.id === fromPhaseId);
+          const toPhase = file.content.phases.find(p => p.id === toPhaseId);
+          
+          if (!fromPhase || !toPhase) continue;
+          
+          const taskIndex = fromPhase.items.findIndex(
+            item => item.type === 'task' && item.id === taskId
+          );
+          
+          if (taskIndex === -1) continue;
+          
+          const task = fromPhase.items[taskIndex];
+          
+          // Remove from source phase
+          const updatedFromPhase = {
+            ...fromPhase,
+            items: fromPhase.items.filter((_, index) => index !== taskIndex)
+          };
+          
+          // Add to target phase
+          const updatedToPhase = {
+            ...toPhase,
+            items: [...toPhase.items, { ...task, originalPhaseId: toPhaseId }]
+          };
+          
+          // Update phases
+          const updatedPhases = file.content.phases.map(phase => {
+            if (phase.id === fromPhaseId) return updatedFromPhase;
+            if (phase.id === toPhaseId) return updatedToPhase;
+            return phase;
+          });
+          
+          get().updateFile(file.filePath, {
+            content: { ...file.content, phases: updatedPhases }
+          });
+          
+          return;
+        }
+      },
+    }),
+    {
+      name: 'workspace-store',
+      serialize: {
+        options: {
+          // Don't persist functions or large objects
+          partialize: (state) => ({
+            workspace: state.workspace,
+            currentFile: state.currentFile,
+            hasUnsavedChanges: state.hasUnsavedChanges,
+          }),
+        },
+      },
+    }
+  )
+);
+```
+
+## Hook Personalizado
+
+### useWorkspace (API Simplificada)
+```typescript
+// src-renderer/hooks/useWorkspace.ts
+import { useWorkspaceStore } from '@/stores/workspace-store';
+
+export function useWorkspace() {
+  const {
+    workspace,
+    currentFile,
+    loading,
+    error,
+    hasUnsavedChanges,
+    openProject,
+    saveWorkspace,
+    setCurrentFile,
+  } = useWorkspaceStore();
+
+  return {
+    // State
+    workspace,
+    currentFile,
+    loading,
+    error,
+    hasUnsavedChanges,
+    
+    // Actions
+    openProject,
+    saveWorkspace,
+    setCurrentFile,
+    
+    // Computed
+    hasFiles: workspace?.files.length > 0,
+    fileCount: workspace?.files.length ?? 0,
+  };
+}
+```
+
+### useTaskOperations (Operações com Tarefas)
+```typescript
+// src-renderer/hooks/useTaskOperations.ts
+import { useWorkspaceStore } from '@/stores/workspace-store';
+
+export function useTaskOperations() {
+  const {
+    toggleTask,
+    toggleSubtask,
+    moveTask,
+    updateFile,
+  } = useWorkspaceStore();
+
+  return {
+    toggleTask,
+    toggleSubtask,
+    moveTask,
+    updateTaskMetadata: (fileId: string, metadata: any) => {
+      updateFile(fileId, { metadata });
+    },
+  };
+}
+```
+
+## Store para UI Local
+
+### UIStore (Modals, Drag State, etc.)
+```typescript
+// src-renderer/stores/ui-store.ts
+import { create } from 'zustand';
+
+interface UIState {
+  // Modal state
+  settingsModalOpen: boolean;
+  settingsModalFile: string | null;
+  
+  // Drag & Drop state
+  draggedTask: string | null;
+  dragOverPhase: string | null;
+  
+  // Actions
+  openSettingsModal: (fileId: string) => void;
+  closeSettingsModal: () => void;
+  setDraggedTask: (taskId: string | null) => void;
+  setDragOverPhase: (phaseId: string | null) => void;
+}
+
+export const useUIStore = create<UIState>((set) => ({
+  // Initial state
+  settingsModalOpen: false,
+  settingsModalFile: null,
+  draggedTask: null,
+  dragOverPhase: null,
+
+  // Modal actions
+  openSettingsModal: (fileId) =>
+    set({ settingsModalOpen: true, settingsModalFile: fileId }),
+  
+  closeSettingsModal: () =>
+    set({ settingsModalOpen: false, settingsModalFile: null }),
+
+  // Drag actions
+  setDraggedTask: (taskId) => set({ draggedTask: taskId }),
+  setDragOverPhase: (phaseId) => set({ dragOverPhase: phaseId }),
+}));
+```
+
+## DevTools Integration
+
+### Configuração Redux DevTools
+```typescript
+// Já incluído no store principal via middleware devtools()
+// Acesse via Redux DevTools Extension no Chrome/Firefox
+
+// Actions são automaticamente logadas com nomes descritivos:
+// - 'setWorkspace'
+// - 'openProject/start'
+// - 'openProject/success'
+// - 'toggleTask'
+// etc.
+```
+
+## Persistência (Opcional)
+
+### Persist Middleware
+```typescript
+// src-renderer/stores/workspace-store.ts
+import { persist } from 'zustand/middleware';
+
+// Wrap store with persist for local storage
+export const useWorkspaceStore = create<WorkspaceState>()(
+  devtools(
+    persist(
+      (set, get) => ({
+        // ... store implementation
+      }),
+      {
+        name: 'taskflow-workspace',
+        partialize: (state) => ({
+          // Only persist specific fields
+          currentFile: state.currentFile,
+          hasUnsavedChanges: state.hasUnsavedChanges,
+        }),
+      }
+    )
+  )
+);
+```
+
+## Padrões de Uso
+
+### Em Componentes React
+```typescript
+// src-renderer/components/KanbanBoard.tsx
+import { useWorkspace } from '@/hooks/useWorkspace';
+import { useTaskOperations } from '@/hooks/useTaskOperations';
+
+export function KanbanBoard() {
+  const { workspace, loading } = useWorkspace();
+  const { moveTask } = useTaskOperations();
+
+  if (loading) return <LoadingSkeleton />;
+  if (!workspace) return <EmptyState />;
+
+  const handleDragEnd = (event: DragEndEvent) => {
+    const { active, over } = event;
+    if (!over) return;
+    
+    moveTask(active.id as string, active.data.current?.phaseId, over.id as string);
+  };
+
+  return (
+    <DndContext onDragEnd={handleDragEnd}>
+      {workspace.files.map(file => (
+        <FileKanban key={file.filePath} file={file} />
+      ))}
+    </DndContext>
+  );
+}
+```
+
+### Subscriptions Seletivas
+```typescript
+// Apenas re-render quando hasUnsavedChanges muda
+const hasChanges = useWorkspaceStore(state => state.hasUnsavedChanges);
+
+// Múltiplos campos com shallow comparison
+const { loading, error } = useWorkspaceStore(
+  state => ({ loading: state.loading, error: state.error }),
+  shallow
+);
+```
+
+## Performance Optimizations
+
+### Memoização de Selectors
+```typescript
+// src-renderer/hooks/useWorkspaceSelectors.ts
+import { useMemo } from 'react';
+import { useWorkspaceStore } from '@/stores/workspace-store';
+
+export function useFileById(fileId: string) {
+  return useWorkspaceStore(
+    state => state.workspace?.files.find(f => f.filePath === fileId),
+    (a, b) => a?.filePath === b?.filePath && a?.hasChanges === b?.hasChanges
+  );
+}
+
+export function useTasksByPhase(fileId: string, phaseId: string) {
+  return useWorkspaceStore(state => {
+    const file = state.workspace?.files.find(f => f.filePath === fileId);
+    const phase = file?.content.phases.find(p => p.id === phaseId);
+    return phase?.items.filter(item => item.type === 'task') || [];
+  });
+}
+```
+
+
+

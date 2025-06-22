@@ -2,27 +2,79 @@
   "name": "taskflow-app",
   "version": "0.1.0",
   "private": true,
+  "main": "dist/main.js",
+  "homepage": "./",
   "scripts": {
-    "dev": "next dev --turbopack",
-    "build": "next build",
-    "start": "next start",
-    "lint": "next lint"
+    "dev": "concurrently \"pnpm dev:next\" \"pnpm dev:wait-and-electron\"",
+    "dev:next": "cross-env NODE_ENV=development next dev frontend --port 3000 --turbo",
+    "dev:wait-and-electron": "wait-on http://localhost:3000 --timeout 30000 --interval 2000 --window 1000 && cross-env NODE_ENV=development electron dist/main.js",
+    "dev:electron": "cross-env NODE_ENV=development electron dist/main.js",
+    "build": "pnpm build:backend && pnpm build:frontend",
+    "build:backend": "tsc -p backend/tsconfig.json",
+    "build:frontend": "cd frontend && next build",
+    "build:all": "pnpm build:backend && pnpm build:frontend",
+    "start": "electron dist/main.js",
+    "lint": "next lint frontend",
+    "pack": "electron-builder --dir",
+    "dist": "electron-builder"
   },
   "dependencies": {
+    "@radix-ui/react-checkbox": "^1.3.2",
+    "@radix-ui/react-dialog": "^1.1.14",
+    "@radix-ui/react-select": "^2.2.5",
+    "@radix-ui/react-separator": "^1.1.7",
+    "@radix-ui/react-slot": "^1.2.3",
+    "class-variance-authority": "^0.7.1",
+    "clsx": "^2.1.1",
+    "gray-matter": "^4.0.3",
+    "lucide-react": "^0.519.0",
+    "next": "15.3.4",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
-    "next": "15.3.4"
+    "remark": "^15.0.1",
+    "remark-parse": "^11.0.0",
+    "remark-stringify": "^11.0.0",
+    "tailwind-merge": "^3.3.1",
+    "zustand": "^5.0.5"
   },
   "devDependencies": {
-    "typescript": "^5",
+    "@eslint/eslintrc": "^3",
+    "@tailwindcss/postcss": "^4",
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",
-    "@tailwindcss/postcss": "^4",
-    "tailwindcss": "^4",
+    "concurrently": "^9.1.2",
+    "cross-env": "^7.0.3",
+    "electron": "^36.5.0",
+    "electron-builder": "^26.0.12",
     "eslint": "^9",
     "eslint-config-next": "15.3.4",
-    "@eslint/eslintrc": "^3"
+    "tailwindcss": "^4",
+    "tw-animate-css": "^1.3.4",
+    "typescript": "^5",
+    "wait-on": "^8.0.3"
+  },
+  "build": {
+    "appId": "com.taskflow.app",
+    "productName": "Cursor TaskFlow",
+    "directories": {
+      "output": "dist/packaged"
+    },
+    "files": [
+      "dist/main.js",
+      "dist/preload.js",
+      "dist/frontend/**/*",
+      "node_modules/**/*"
+    ],
+    "mac": {
+      "category": "public.app-category.productivity"
+    },
+    "win": {
+      "target": "nsis"
+    },
+    "linux": {
+      "target": "AppImage"
+    }
   },
   "packageManager": "pnpm@9.15.3+sha512.1f79bc245a66eb0b07c5d4d83131240774642caaa86ef7d0434ab47c0d16f66b04e21e0c086eb61e62c77efc4d7f7ec071afad3796af64892fae66509173893a"
 }

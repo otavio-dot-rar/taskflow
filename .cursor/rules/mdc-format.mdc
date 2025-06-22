@@ -1,0 +1,320 @@
+---
+description: Structure and parsing of .mdc files, JSON types and serialization - activate when working with .mdc files
+globs: 
+alwaysApply: false
+---
+# Formato de Dados .mdc
+
+## Anatomia de um Arquivo .mdc
+
+### Estrutura Básica
+```markdown
+---
+description: Descrição da regra
+globs: 
+alwaysApply: false
+---
+
+# Título Principal
+
+## Fase 1: Nome da Fase
+
+### Etapa 1.1: Nome da Etapa
+- [ ] Tarefa não completa
+- [x] Tarefa completa
+  - [ ] Subtarefa 1
+  - [x] Subtarefa 2
+
+### Etapa 1.2: Outra Etapa
+- [ ] Outra tarefa
+
+## Fase 2: Segunda Fase
+...
+```
+
+## Mapeamento para Estrutura JSON
+
+### Frontmatter (YAML Header)
+```yaml
+---
+description: "Descrição da regra" # Presente APENAS em Agent Requested
+globs: ["*.ts", "*.tsx"] # Padrões glob (opcional)
+alwaysApply: false # true = Always, false = Agent Requested/Manual
+priority: high | medium | low (opcional, legacy)
+tags: ["tag1", "tag2"] (opcional, legacy)
+---
+```
+
+**Mapping e Lógica de Classificação:**
+```typescript
+interface Metadata {
+  description?: string; // Presente APENAS em Agent Requested
+  globs?: string | string[];
+  alwaysApply: boolean;
+  // Legacy/computed fields
+  priority?: 'high' | 'medium' | 'low';
+  tags?: string[];
+}
+
+type RuleType = "Always" | "Agent Requested" | "Manual";
+
+function getRuleType(metadata: Metadata): RuleType {
+  if (metadata.alwaysApply) return "Always";
+  if (metadata.description && metadata.description.trim() !== "") return "Agent Requested";
+  return "Manual"; // alwaysApply: false mas sem description
+}
+```
+
+**Padrões Observados:**
+- **Always:** `alwaysApply: true` + **sem description**
+- **Agent Requested:** `alwaysApply: false` + **com description**
+- **Manual:** `alwaysApply: false` + **sem description**
+
+### Hierarquia de Conteúdo
+
+| Markdown | Elemento Visual | Tipo JSON |
+|----------|-----------------|-----------|
+| `# Título` | Header da página | `{ type: 'title', text: string }` |
+| `## Fase` | Coluna Kanban | `{ type: 'phase', name: string, items: [] }` |
+| `### Etapa` | Separador/Header | `{ type: 'step', name: string }` |
+| `- [ ] Tarefa` | Card Kanban | `{ type: 'task', text: string, completed: false, subtasks: [] }` |
+| `- [x] Tarefa` | Card Completo | `{ type: 'task', text: string, completed: true }` |
+| `  - [ ] Sub` | Checkbox interno | `{ text: string, completed: false }` |
+
+## Estrutura JSON Completa
+
+```typescript
+interface WorkspaceFile {
+  filePath: string;
+  fileName: string;
+  metadata: Metadata;
+  content: {
+    title?: string;
+    phases: Phase[];
+  };
+  lastModified: Date;
+}
+
+interface Phase {
+  id: string;
+  name: string;
+  items: (Step | Task)[];
+}
+
+interface Step {
+  type: 'step';
+  id: string;
+  name: string;
+}
+
+interface Task {
+  type: 'task';
+  id: string;
+  text: string;
+  completed: boolean;
+  subtasks: SubTask[];
+  originalPhaseId: string; // Para drag & drop
+}
+
+interface SubTask {
+  id: string;
+  text: string;
+  completed: boolean;
+}
+```
+
+## Regras de Parsing
+
+### 1. Frontmatter Obrigatório
+- **Todo arquivo .mdc DEVE ter frontmatter YAML**
+- **Campos obrigatórios:** `ruleType`, `description`
+- **Parsing:** Usar `gray-matter` library
+
+```typescript
+import matter from 'gray-matter';
+
+const { data: metadata, content } = matter(fileContent);
+```
+
+### 2. Hierarquia Markdown
+- **`##` cria nova Fase (coluna kanban)**
+- **`###` cria Etapa (separador visual)**
+- **`- [ ]` ou `- [x]` cria Tarefa**
+- **Indentação com 2 espaços cria Subtarefa**
+
+### 3. Links Entre Arquivos
+- **Formato:** `[texto](mdc:caminho/arquivo.mdc)`
+- **Resolução:** Relativo ao workspace root
+- **Exemplo:** `[Ver detalhes](mdc:details/task-detail.mdc)`
+
+### 4. IDs Únicos
+- **Geração:** UUID v4 ou incremento baseado em conteúdo
+- **Persistência:** IDs são gerados no parsing, não salvos no .mdc
+- **Estabilidade:** Mesmo ID para mesmo conteúdo entre sessões
+
+## Implementação do Parser
+
+### Main Process (Node.js)
+```typescript
+// src-main/services/mdc-parser.ts
+import matter from 'gray-matter';
+import { marked } from 'marked';
+
+export class MdcParser {
+  static parseFile(filePath: string): WorkspaceFile {
+    const content = fs.readFileSync(filePath, 'utf-8');
+    const { data: metadata, content: markdownContent } = matter(content);
+    
+    const phases = this.parsePhases(markdownContent);
+    
+    return {
+      filePath,
+      fileName: path.basename(filePath),
+      metadata: metadata as Metadata,
+      content: { phases },
+      lastModified: fs.statSync(filePath).mtime
+    };
+  }
+
+  private static parsePhases(markdown: string): Phase[] {
+    // Implementar regex/marked para hierarquia
+    // ## → nova fase
+    // ### → nova etapa
+    // - [ ] → nova tarefa
+  }
+}
+```
+
+### Serialização de Volta para .mdc
+```typescript
+// src-main/services/mdc-serializer.ts
+export class MdcSerializer {
+  static serialize(workspaceFile: WorkspaceFile): string {
+    const frontmatter = matter.stringify('', workspaceFile.metadata);
+    const content = this.buildMarkdownContent(workspaceFile.content);
+    
+    return frontmatter + content;
+  }
+
+  private static buildMarkdownContent(content: any): string {
+    let markdown = '';
+    
+    for (const phase of content.phases) {
+      markdown += `\n## ${phase.name}\n\n`;
+      
+      for (const item of phase.items) {
+        if (item.type === 'step') {
+          markdown += `### ${item.name}\n`;
+        } else if (item.type === 'task') {
+          const checkbox = item.completed ? '[x]' : '[ ]';
+          markdown += `- ${checkbox} ${item.text}\n`;
+          
+          for (const subtask of item.subtasks) {
+            const subCheckbox = subtask.completed ? '[x]' : '[ ]';
+            markdown += `  - ${subCheckbox} ${subtask.text}\n`;
+          }
+        }
+      }
+    }
+    
+    return markdown;
+  }
+}
+```
+
+## Validação e Integridade
+
+### Regras de Validação
+1. **Frontmatter válido:** YAML bem formado
+2. **Campos obrigatórios:** `description` e `alwaysApply` presentes
+3. **Hierarquia válida:** Não pode ter tarefa sem fase
+4. **Links válidos:** Arquivos referenciados existem
+5. **Encoding:** UTF-8 obrigatório
+6. **Globs válidos:** Padrões glob bem formados (se presentes)
+
+### Backup e Recuperação
+- **Backup automático:** `.mdc.bak` antes de cada save
+- **Validação pré-save:** Verificar integridade antes sobrescrever
+- **Rollback:** Capacidade de restaurar backup em caso de erro
+
+## Exemplos Práticos
+
+### Arquivo de Exemplo: `project-plan.mdc`
+```markdown
+---
+description: Plano de desenvolvimento do projeto TaskFlow
+globs: ["*.ts", "*.tsx"]
+alwaysApply: true
+priority: high
+tags: ["mvp", "planning"]
+---
+
+# Plano de Desenvolvimento TaskFlow
+
+## Fase 1: Foundation
+### Etapa 1.1: Setup
+- [x] Configurar Electron
+- [x] Configurar Next.js
+- [ ] Integrar shadcn/ui
+
+### Etapa 1.2: Basic UI
+- [ ] Criar layout principal
+- [ ] Implementar sidebar
+
+## Fase 2: Core Features  
+### Etapa 2.1: File Reading
+- [ ] Parser .mdc
+  - [ ] Frontmatter parsing
+  - [ ] Content parsing
+- [ ] File system integration
+```
+
+### JSON Resultante:
+```json
+{
+  "filePath": "/project/.cursor/rules/project-plan.mdc",
+  "fileName": "project-plan.mdc",
+  "metadata": {
+    "description": "Plano de desenvolvimento do projeto TaskFlow",
+    "globs": ["*.ts", "*.tsx"],
+    "alwaysApply": true,
+    "priority": "high",
+    "tags": ["mvp", "planning"]
+  },
+  "content": {
+    "title": "Plano de Desenvolvimento TaskFlow",
+    "phases": [
+      {
+        "id": "phase-1",
+        "name": "Foundation",
+        "items": [
+          {
+            "type": "step",
+            "id": "step-1-1",
+            "name": "Setup"
+          },
+          {
+            "type": "task",
+            "id": "task-1",
+            "text": "Configurar Electron", 
+            "completed": true,
+            "subtasks": []
+          }
+          // ... mais itens
+        ]
+      }
+    ]
+  }
+}
+```
+
+
+
+
+
+
+
+
+
+
+

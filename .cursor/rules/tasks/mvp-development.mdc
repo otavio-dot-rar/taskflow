@@ -1,0 +1,124 @@
+---
+description: MVP development plan with detailed phases, stages and tasks - activate when following roadmap or planning development
+globs: 
+alwaysApply: false
+---
+# Plano de Desenvolvimento MVP
+
+## Status Atual: Fase 1 🔄 Em Progresso (Etapa 1.2 Completa)
+
+**Fundação Electron + Next.js funcionando perfeitamente:**
+
+- [x] Electron 36.5.0 + Next.js 15.3.4
+- [x] TypeScript configurado com estrutura frontend/backend
+- [x] shadcn/ui instalado e configurado
+- [x] Scripts de desenvolvimento funcionais (`pnpm dev`)
+- [x] IPC básico implementado e testado
+- [x] Aplicação desktop abre e funciona
+- [x] Estrutura de arquivos migrada para padrão da comunidade (frontend/backend)
+
+## Fase 1: Leitura e Visualização (Read-Only)
+
+### Etapa 1.1: Preparação das Dependências [x] Completa
+
+- [x] **Tarefa 1.1.1:** Instalar dependências de parsing
+  ```bash
+  pnpm add gray-matter remark remark-parse remark-stringify
+  ```
+- [x] **Tarefa 1.1.2:** Instalar componentes shadcn/ui adicionais
+  ```bash
+  npx shadcn@latest add button card dialog select checkbox separator
+  ```
+- [x] **Tarefa 1.1.3:** Instalar Zustand para gerenciamento de estado
+  ```bash
+  pnpm add zustand
+  ```
+
+### Etapa 1.2: Estrutura de Dados e Tipos [x] Completa
+
+- [x] **Tarefa 1.2.1:** Criar tipos TypeScript para workspace
+  - Arquivo: `frontend/types/workspace.ts` e `backend/types/workspace.ts`
+  - Tipos: `WorkspaceData`, `WorkspaceFitadata`, `ContentData`, `Phase`, `Etapa`, `TaskItem`
+- [x] **Tarefa 1.2.2:** Criar tipos TypeScript para IPC
+  - Arquivo: `backend/types/ipc.ts`
+  - Definir eventos: `OPEN_PROJECT_DIALOG`, `LOAD_WORKSPACE`, `GET_APP_VERSION`
+
+### Etapa 1.3: Backend - Lógica de Leitura (Main Process) [x] Completa
+
+- [x] **Tarefa 1.3.1:** Dialog de seleção de pasta
+  - Atualizar `backend/main.ts` com handler `OPEN_PROJECT_DIALOG`
+  - Usar `dialog.showOpenDialog({ properties: ['openDirectory'] })`
+- [x] **Tarefa 1.3.2:** Scanner de workspace básico
+  - Implementado função `scanMdcFiles()` em `backend/main.ts`
+  - Busca recursiva por arquivos `.mdc`
+- [x] **Tarefa 1.3.3:** IPC handlers funcionais
+  - Handler `LOAD_WORKSPACE` implementado
+  - Estrutura básica de scanning e leitura de arquivos
+- [x] **Tarefa 1.3.4:** Sistema I  - Preload script configurado sem imports externos
+  - `contextBridge` funcionando corretamente
+- [ ] **Tarefa 1.3.5:** Parser completo de arquivos .mdc
+  - Usar `gray-matter` para frontmatter + content
+  - Parser hierárquico: `## Fase`, `### Etapa`, `- [ ] Tarefa`
+  - **PRÓXIMA TAREFA CRÍTICA**
+
+### Etapa 1.4: Frontend - Interface de Usuário 🔄 Parcial
+
+- zar `backend/preload.ts`
+  - API `openProjectDialog`, `loadWorkspace`, `getAppVersion` funcionais
+  - Interface `ElectronAPI` completa e testada
+- [x] **Tarefa 1.4.2:** Componente básico de seleção
+  - Criado `frontend/components/ProjectSelector.tsx`
+  - Integração inicial com IPC funcionando
+- [ ] **Tarefa 1.4.3:** Gerenciamento de estado otimizado
+  - Hook `useWorkspace` ou store Zustand
+- [ ] **Tarefa 1.4.4:** Componente Sidebar para arquivos
+- [ ] **Tarefa 1.4.5:** Componentes Kanban completos
+  - `KanbanBoard.tsx`, `KanbanColumn.tsx`, `TaskCard.tsx`, `EtapaHeader.tsx`
+
+### Etapa 1.5: Renderização e Teste ❌ Pendente
+
+- [ ] **Tarefa 1.5.1:** Lógica de renderização
+  - Mapear JSON → componentes visuais
+  - Hierarquia: Arquivo → Fase → Etapa → Tarefa → Subtarefa
+- [ ] **Tarefa 1.5.2:** Estilização Tailwind
+  - Layout responsivo, cores consistentes
+- [ ] **Tarefa 1.5.3:** Teste com .mdc real
+  - Usar documentação do projeto ou criar arquivo teste
+
+**🎯 Marco Fase 1:** Kanban estático exibindo estrutura .mdc correta
+
+## Progresso Atual Detalhado
+
+### [x] Conquistas Técnicas
+
+- **Arquitetura**: Estrutura frontend/backend seguindo padrões da comunidade 2025
+- **IPC**: Comunicação segura funcionando (testado com sucesso)
+- **Scanning**: 10 arquivos .mdc detectados no diretório `.cursor/rules`
+- **Build System**: TypeScript compilando corretamente para ambos os processos
+- **Desenvolvimento**: Workflow `pnpm dev` estável
+
+### 🔄 Próximo Passo Crítico
+
+**Implementar Parser .mdc completo** - Esta é a tarefa que desbloqueará toda a visualização Kanban
+
+```typescript
+// Próxima implementação em backend/services/mdc-parser.ts
+export class MdcParser {
+  static async parseFile(filePath: string): Promise<WorkspaceFile> {
+    // gray-matter para extrair frontmatter
+    // Parser hierárquico para ## Fase, ### Etapa, - [ ] Tarefa
+    // Retornar estrutura JSON completa
+  }
+}
+```
+
+### 📊 Status Fases
+
+- **Fase 0**: [x] 100% Completa
+- **Fase 1**: 🔄 ~60% Completa
+  - Etapas 1.1, 1.2, 1.3: [x] Completas
+  - Etapa 1.4: 🔄 50% Completa
+  - Etapa 1.5: ❌ 0% Completa
+- **Fase 2**: ❌ 0% Completa (dependente da Fase 1)
+- **Fase 3**: ❌ 0% Completa (dependente da Fase 2)
+

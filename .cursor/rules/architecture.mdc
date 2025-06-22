@@ -1,0 +1,131 @@
+---
+description: 
+globs: 
+alwaysApply: true
+---
+# Arquitetura e Stack Tecnológica
+
+## Stack Principal
+
+- **Framework Desktop:** Electron 36.5.0
+- **Framework UI:** Next.js 15.3.4 com App Router
+- **Linguagem:** TypeScript
+- **Estilização:** Tailwind CSS v4
+- **Componentes:** shadcn/ui (estilo new-york)
+- **Gerenciador de Pacotes:** pnpm
+
+## Arquitetura Dual-Process
+
+### Main Process ([backend/](mdc:backend))
+Processo Node.js principal que gerencia:
+- **Criação de janelas:** [main.ts](mdc:backend/main.ts)
+- **Acesso ao sistema de arquivos**
+- **Comunicação IPC com renderer**
+- **Segurança da aplicação**
+
+```typescript
+// Configuração de segurança obrigatória
+webPreferences: {
+  nodeIntegration: false,      // Segurança
+  contextIsolation: true,      // Segurança  
+  preload: path.join(__dirname, "preload.js")
+}
+```
+
+### Renderer Process ([frontend/](mdc:frontend))
+Interface React/Next.js que executa:
+- **UI Components com shadcn/ui**
+- **Gerenciamento de estado da aplicação**
+- **Comunicação segura via IPC**
+
+## Estrutura de Comunicação IPC
+
+### Preload Script ([preload.ts](mdc:backend/preload.ts))
+Bridge segura entre main e renderer:
+
+```typescript
+interface ElectronAPI {
+  getAppVersion: () => Promise<string>;
+  openProjectDialog: () => Promise<string | null>;
+  loadWorkspace: (projectPath: string) => Promise<any>;
+  saveWorkspace: (workspaceData: any) => Promise<boolean>;
+}
+```
+
+### Padrão de Comunicação
+1. **Renderer → Main:** `ipcRenderer.invoke(channel, ...args)`
+2. **Main → Renderer:** `ipcMain.handle(channel, handler)`
+3. **Segurança:** Apenas APIs expostas via `contextBridge`
+
+## Configuração Next.js para Electron
+
+### Build para Static Export
+O Next.js é configurado para **static export** compatível com Electron:
+
+```typescript
+// frontend/next.config.ts
+const nextConfig: NextConfig = {
+  output: "export",           // Build estático
+  trailingSlash: true,       // Compatibilidade Electron
+  distDir: "../dist/frontend", // Output para pasta dist
+}
+```
+
+### Scripts de Desenvolvimento
+```json
+{
+  "dev": "concurrently \"pnpm dev:next\" \"pnpm dev:wait-and-electron\"",
+  "dev:next": "next dev frontend --port 3000 --turbo",
+  "dev:wait-and-electron": "wait-on http://localhost:3000 && electron dist/main.js"
+}
+```
+
+## Estrutura de Build
+
+### Development Mode
+- **Next.js:** `http://localhost:3000` (dev server)
+- **Electron:** Carrega URL do dev server
+- **Hot Reload:** Ativo (com problema conhecido de compilação excessiva)
+
+### Production Build
+- **Next.js:** Build estático em `dist/frontend/`
+- **Electron:** Carrega arquivos estáticos locais
+- **Packaging:** `electron-builder` para distribuição
+
+## Considerações de Segurança
+
+### Configurações Obrigatórias
+```typescript
+webPreferences: {
+  nodeIntegration: false,        // Nunca habilitar
+  contextIsolation: true,        // Sempre true
+  sandbox: false,                // Pode ser true se não precisar de Node.js
+  preload: "caminho/preload.js"  // Sempre usar preload
+}
+```
+
+### Content Security Policy
+```typescript
+app.on("web-contents-created", (_event, contents) => {
+  contents.setWindowOpenHandler(({ url }) => {
+    console.log("Blocked attempt to open:", url);
+    return { action: "deny" };
+  });
+});
+```
+
+## Performance e Otimizações
+
+### Next.js Turbopack
+- **Habilitado:** `--turbo` flag no dev script
+- **Benefício:** Compilação mais rápida (quando funciona)
+- **Problema Conhecido:** Hot reload excessivo no Next.js 15
+
+### Electron Optimizations
+- **lazy loading:** Janela só aparece quando pronta (`show: false`)
+- **preload minimalista:** Apenas APIs necessárias expostas
+- **DevTools:** Apenas em desenvolvimento
+
+
+
+

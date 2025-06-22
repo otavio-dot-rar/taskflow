@@ -1,0 +1,430 @@
+---
+description: 
+globs: 
+alwaysApply: true
+---
+# Comunicação IPC (Inter-Process Communication)
+
+## Arquitetura de Segurança
+
+### Princípios de Segurança
+- **Context Isolation:** `contextIsolation: true` (obrigatório)
+- **Node Integration:** `nodeIntegration: false` (obrigatório) 
+- **Preload Script:** Única ponte segura entre processos
+- **API Controlada:** Apenas métodos específicos expostos
+
+### Fluxo de Comunicação
+```
+┌─────────────────┐       ┌──────────────┐       ┌─────────────────┐
+│ Renderer Process│──IPC──│ Preload.ts   │──IPC──│ Main Process    │
+│ (React/Next.js) │       │ (Bridge)     │       │ (Node.js/Electron)│
+└─────────────────┘       └──────────────┘       └─────────────────┘
+```
+
+## Interface API Completa
+
+### ElectronAPI Interface
+```typescript
+// backend/preload.ts
+export interface ElectronAPI {
+  // App básico
+  getAppVersion: () => Promise<string>;
+  
+  // Workspace operations
+  openProjectDialog: () => Promise<string | null>;
+  loadWorkspace: (projectPath: string) => Promise<WorkspaceData>;
+  saveWorkspace: (workspaceData: WorkspaceData) => Promise<SaveResult>;
+  
+  // File operations (futuro)
+  watchFileChanges: (callback: (changes: FileChange[]) => void) => void;
+  
+  // Window operations (futuro)
+  minimizeWindow: () => void;
+  maximizeWindow: () => void;
+  closeWindow: () => void;
+}
+```
+
+### Implementação Preload
+```typescript
+// backend/preload.ts
+import { contextBridge, ipcRenderer } from "electron";
+
+const electronAPI: ElectronAPI = {
+  // App info
+  getAppVersion: () => ipcRenderer.invoke("get-app-version"),
+  
+  // Project operations
+  openProjectDialog: () => ipcRenderer.invoke("open-project-dialog"),
+  loadWorkspace: (projectPath: string) => 
+    ipcRenderer.invoke("load-workspace", projectPath),
+  saveWorkspace: (workspaceData: WorkspaceData) => 
+    ipcRenderer.invoke("save-workspace", workspaceData),
+};
+
+// Expose securely to renderer
+contextBridge.exposeInMainWorld("electronAPI", electronAPI);
+
+// Global type for renderer
+declare global {
+  interface Window {
+    electronAPI: ElectronAPI;
+  }
+}
+```
+
+## Handlers do Main Process
+
+### Implementação dos Handlers
+```typescript
+// backend/main.ts
+import { ipcMain, dialog, app } from "electron";
+import { WorkspaceScanner } from "./services/workspace-scanner";
+import { MdcParser } from "./services/mdc-parser";
+import { MdcSerializer } from "./services/mdc-serializer";
+
+// Basic app info
+ipcMain.handle("get-app-version", () => {
+  return app.getVersion();
+});
+
+// Open project dialog
+ipcMain.handle("open-project-dialog", async () => {
+  try {
+    const result = await dialog.showOpenDialog(mainWindow!, {
+      title: "Selecionar Pasta do Projeto",
+      properties: ["openDirectory"],
+      message: "Escolha a pasta que contém os arquivos .mdc"
+    });
+    
+    if (result.canceled || result.filePaths.length === 0) {
+      return null;
+    }
+    
+    return result.filePaths[0];
+  } catch (error) {
+    console.error("Error opening project dialog:", error);
+    throw new Error("Falha ao abrir diálogo de seleção");
+  }
+});
+
+// Load workspace
+ipcMain.handle("load-workspace", async (event, projectPath: string) => {
+  try {
+    // Scan for .mdc files
+    const scanner = new WorkspaceScanner();
+    const mdcFiles = await scanner.findMdcFiles(projectPath);
+    
+    // Parse each file
+    const workspaceFiles: WorkspaceFile[] = [];
+    for (const filePath of mdcFiles) {
+      const parsedFile = await MdcParser.parseFile(filePath);
+      workspaceFiles.push(parsedFile);
+    }
+    
+    return {
+      projectPath,
+      files: workspaceFiles,
+      loadedAt: new Date().toISOString()
+    };
+    
+  } catch (error) {
+    console.error("Error loading workspace:", error);
+    throw new Error(`Falha ao carregar workspace: ${error.message}`);
+  }
+});
+
+// Save workspace
+ipcMain.handle("save-workspace", async (event, workspaceData: WorkspaceData) => {
+  try {
+    const serializer = new MdcSerializer();
+    const results: SaveResult[] = [];
+    
+    for (const file of workspaceData.files) {
+      if (file.hasChanges) {
+        await serializer.saveFile(file);
+        results.push({
+          filePath: file.filePath,
+          success: true,
+          savedAt: new Date().toISOString()
+        });
+      }
+    }
+    
+    return {
+      success: true,
+      results,
+      message: `${results.length} arquivo(s) salvos com sucesso`
+    };
+    
+  } catch (error) {
+    console.error("Error saving workspace:", error);
+    return {
+      success: false,
+      error: error.message,
+      message: "Falha ao salvar workspace"
+    };
+  }
+});
+```
+
+## Tipos de Dados IPC
+
+### WorkspaceData
+```typescript
+// backend/types/workspace.ts
+export interface WorkspaceData {
+  projectPath: string;
+  files: WorkspaceFile[];
+  loadedAt: string;
+}
+
+export interface WorkspaceFile {
+  filePath: string;
+  fileName: string;
+  metadata: Metadata;
+  content: ContentData;
+  lastModified: Date;
+  hasChanges?: boolean; // Adicionado no renderer
+}
+
+export interface ContentData {
+  title?: string;
+  phases: Phase[];
+}
+
+export interface SaveResult {
+  success: boolean;
+  results?: FileSaveResult[];
+  error?: string;
+  message: string;
+}
+
+export interface FileSaveResult {
+  filePath: string;
+  success: boolean;
+  savedAt: string;
+  error?: string;
+}
+```
+
+## Uso no Renderer
+
+### Hook personalizado para Workspace
+```typescript
+// frontend/hooks/useWorkspace.ts
+import { useState, useCallback } from 'react';
+
+export function useWorkspace() {
+  const [workspace, setWorkspace] = useState<WorkspaceData | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const openProject = useCallback(async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      
+      const projectPath = await window.electronAPI.openProjectDialog();
+      if (!projectPath) return; // User cancelled
+      
+      const workspaceData = await window.electronAPI.loadWorkspace(projectPath);
+      setWorkspace(workspaceData);
+      
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Erro desconhecido');
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  const saveWorkspace = useCallback(async () => {
+    if (!workspace) return;
+    
+    try {
+      setLoading(true);
+      setError(null);
+      
+      const result = await window.electronAPI.saveWorkspace(workspace);
+      if (!result.success) {
+        throw new Error(result.message);
+      }
+      
+      // Update workspace to mark as saved
+      setWorkspace(prev => prev ? {
+        ...prev,
+        files: prev.files.map(f => ({ ...f, hasChanges: false }))
+      } : null);
+      
+      return result;
+      
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Erro ao salvar');
+      throw err;
+    } finally {
+      setLoading(false);
+    }
+  }, [workspace]);
+
+  return {
+    workspace,
+    loading,
+    error,
+    openProject,
+    saveWorkspace,
+    updateWorkspace: setWorkspace
+  };
+}
+```
+
+### Componente React usando IPC
+```typescript
+// frontend/components/ProjectManager.tsx
+import { useWorkspace } from "@/hooks/useWorkspace";
+import { Button } from "@/components/ui/button";
+import { toast } from "@/components/ui/use-toast";
+
+export function ProjectManager() {
+  const { workspace, loading, error, openProject, saveWorkspace } = useWorkspace();
+
+  const handleOpenProject = async () => {
+    try {
+      await openProject();
+      toast({
+        title: "Projeto carregado",
+        description: "Workspace carregado com sucesso"
+      });
+    } catch (err) {
+      toast({
+        title: "Erro",
+        description: error || "Falha ao carregar projeto",
+        variant: "destructive"
+      });
+    }
+  };
+
+  const handleSaveProject = async () => {
+    try {
+      await saveWorkspace();
+      toast({
+        title: "Sucesso", 
+        description: "Projeto salvo com sucesso"
+      });
+    } catch (err) {
+      toast({
+        title: "Erro ao salvar",
+        description: "Não foi possível salvar o projeto",
+        variant: "destructive"
+      });
+    }
+  };
+
+  return (
+    <div className="space-y-4">
+      <Button 
+        onClick={handleOpenProject}
+        disabled={loading}
+      >
+        {loading ? "Carregando..." : "Abrir Projeto"}
+      </Button>
+      
+      {workspace && (
+        <Button 
+          onClick={handleSaveProject}
+          disabled={loading}
+          variant="outline"
+        >
+          {loading ? "Salvando..." : "Salvar Projeto"}
+        </Button>
+      )}
+    </div>
+  );
+}
+```
+
+## Error Handling
+
+### Padrões de Erro
+```typescript
+// Renderer side error handling
+try {
+  const result = await window.electronAPI.loadWorkspace(path);
+} catch (error) {
+  if (error instanceof Error) {
+    console.error("IPC Error:", error.message);
+    // Show user-friendly error
+    toast({
+      title: "Erro",
+      description: error.message,
+      variant: "destructive"
+    });
+  }
+}
+
+// Main process error handling
+ipcMain.handle("risky-operation", async (event, data) => {
+  try {
+    // Operation that might fail
+    return { success: true, data: result };
+  } catch (error) {
+    console.error("Operation failed:", error);
+    // Don't throw, return error info
+    return { 
+      success: false, 
+      error: error.message,
+      code: error.code || 'UNKNOWN_ERROR'
+    };
+  }
+});
+```
+
+## Debugging IPC
+
+### Development Tools
+```typescript
+// Enable IPC debugging in development
+if (isDev) {
+  // Log all IPC communications
+  ipcMain.on('*', (event, ...args) => {
+    console.log('IPC Event:', event, args);
+  });
+  
+  // Expose debug methods
+  contextBridge.exposeInMainWorld('debugAPI', {
+    logIPC: (message: string) => console.log('[Renderer]', message)
+  });
+}
+```
+
+### Error Logging
+```typescript
+// Centralized error logging
+ipcMain.handle('log-error', async (event, error: any) => {
+  console.error('[Renderer Error]:', error);
+  // Could send to external logging service
+});
+
+// Use in renderer
+window.electronAPI?.logError?.(error);
+```
+
+## Performance
+
+### Best Practices
+- **Minimize IPC calls:** Batch operations when possible
+- **Avoid large payloads:** Stream large data if needed
+- **Cache results:** Don't re-fetch unchanged data
+- **Async patterns:** Always use `ipcMain.handle` / `ipcRenderer.invoke`
+
+### Optimization Example
+```typescript
+// BAD: Multiple calls
+for (const file of files) {
+  await window.electronAPI.saveFile(file);
+}
+
+// GOOD: Batch operation  
+await window.electronAPI.saveFiles(files);
+```
+
+

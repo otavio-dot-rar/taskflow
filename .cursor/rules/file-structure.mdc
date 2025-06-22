@@ -1,0 +1,175 @@
+---
+description: 
+globs: 
+alwaysApply: true
+---
+# Estrutura de Arquivos e Convenções
+
+## Estrutura Raiz do Projeto
+
+```
+taskflow-app/
+├── .cursor/rules/           # Regras do Cursor (este diretório)
+├── backend/                # Processo Principal Electron
+├── frontend/               # Processo Renderer (Next.js)
+├── dist/                   # Build compilado
+├── node_modules/           # Dependências
+├── package.json            # Configuração do projeto
+├── pnpm-lock.yaml         # Lock file do pnpm
+├── tsconfig.json          # Configuração TypeScript global
+├── components.json        # Configuração shadcn/ui (frontend)
+└── README.md              # Documentação
+```
+
+## Main Process ([backend/](mdc:backend))
+
+```
+backend/
+├── main.ts                 # Entry point principal do Electron
+├── preload.ts             # Bridge IPC segura
+├── services/              # Lógica de negócio (parser .mdc, etc.)
+├── types/                 # Tipos TypeScript específicos do main
+├── utils/                 # Utilitários do processo main
+└── tsconfig.json          # Config TypeScript específico do backend
+```
+
+### Arquivos Principais
+
+- **[main.ts](mdc:backend/main.ts):** Gerenciamento de janelas, configuração de segurança, handlers IPC
+- **[preload.ts](mdc:backend/preload.ts):** API segura exposta ao renderer via `contextBridge`
+
+## Renderer Process ([frontend/](mdc:frontend))
+
+```
+frontend/
+├── app/                   # Next.js App Router
+│   ├── layout.tsx        # Layout raiz da aplicação
+│   ├── page.tsx          # Página principal
+│   ├── globals.css       # Estilos globais Tailwind
+│   └── favicon.ico       # Ícone da aplicação
+├── components/           # Componentes React
+│   └── ui/              # Componentes shadcn/ui
+├── lib/                 # Utilitários e configurações
+│   └── utils.ts         # Funções utilitárias (cn, etc.)
+├── hooks/               # Custom React hooks
+├── types/               # Tipos TypeScript frontend
+├── stores/              # Gerenciamento de estado (Zustand)
+├── next.config.ts       # Configuração Next.js
+├── postcss.config.mjs   # Configuração PostCSS
+├── tsconfig.json        # Config TypeScript específico
+└── public/              # Assets estáticos
+```
+
+## Convenções de Nomenclatura
+
+### Arquivos e Diretórios
+- **Componentes React:** `PascalCase.tsx` (ex: `KanbanBoard.tsx`)
+- **Páginas Next.js:** `lowercase.tsx` (ex: `page.tsx`, `layout.tsx`)
+- **Hooks:** `use*.ts` (ex: `useWorkspace.ts`)
+- **Types/Interfaces:** `types.ts` ou `*.types.ts`
+- **Utilities:** `utils.ts` ou `*.utils.ts`
+- **Diretórios:** `kebab-case` ou `lowercase`
+
+### Componentes shadcn/ui
+Localizados em `frontend/components/ui/`:
+- **Instalação:** `npx shadcn@latest add <component>`
+- **Importação:** `import { Button } from "@/components/ui/button"`
+- **Customização:** Permitida, mas manter compatibilidade
+
+### Aliases TypeScript
+Configurados em [components.json](mdc:components.json):
+```typescript
+"@/components"  → "frontend/components"
+"@/lib"         → "frontend/lib" 
+"@/hooks"       → "frontend/hooks"
+"@/ui"          → "frontend/components/ui"
+"@/utils"       → "frontend/lib/utils"
+```
+
+## Estrutura de Build
+
+### Desenvolvimento
+```
+dist/                     # Compilado unificado
+├── main.js              # backend/main.ts compilado
+├── preload.js           # backend/preload.ts compilado
+└── backend/             # Outros arquivos backend compilados
+
+frontend/.next/          # Build temporário Next.js
+```
+
+### Produção
+```
+dist/                    # Build final
+├── main.js             # Backend compilado
+├── preload.js          # Preload compilado
+├── frontend/           # Next.js static export
+│   ├── index.html
+│   ├── _next/
+│   └── ...
+└── packaged/           # Electron Builder output
+    ├── win-unpacked/
+    ├── taskflow-app-1.0.0.exe
+    └── ...
+```
+
+## Configurações Importantes
+
+### [tsconfig.json](mdc:tsconfig.json) (Raiz)
+- **Compilação:** ES2020, CommonJS para Electron
+- **References:** Backend e frontend como projetos separados
+- **Strict mode:** Habilitado
+
+### [package.json](mdc:package.json)
+```json
+{
+  "main": "dist/main.js",          # Entry point Electron
+  "homepage": "./",                # Base path para static export
+  "packageManager": "pnpm@9.15.3" # Lock pnpm version
+}
+```
+
+### Scripts de Build
+```json
+{
+  "build": "pnpm build:backend && pnpm build:frontend",
+  "build:backend": "tsc -p backend/tsconfig.json",
+  "build:frontend": "cd frontend && next build"
+}
+```
+
+## Regras de Organização
+
+### 📁 Separação de Responsabilidades
+- **Backend process:** Sistema de arquivos, dialogs, persistência
+- **Frontend process:** UI, interações, estado visual
+- **IPC:** Comunicação mínima e tipada
+
+### 📝 Convenções de Código
+- **Imports:** Absolute paths com aliases (`@/`)
+- **Components:** Um componente por arquivo
+- **Types:** Interfaces explícitas para IPC
+- **CSS:** Tailwind classes, evitar CSS custom
+
+### 🔒 Segurança
+- **Nunca:** `nodeIntegration: true`
+- **Sempre:** `contextIsolation: true`
+- **IPC:** Apenas através do preload script
+- **File access:** Apenas no backend process
+
+## Benefícios da Nova Estrutura
+
+### ✅ Vantagens
+- **Separação clara:** Frontend e backend bem definidos
+- **Build simplificado:** Caminhos mais diretos
+- **Configuração TypeScript:** Projetos independentes
+- **Padrão da comunidade:** Estrutura amplamente adotada
+- **Manutenibilidade:** Mais fácil de entender e modificar
+
+### 🔧 Migração
+- **De:** `src-main/` → **Para:** `backend/`
+- **De:** `src-renderer/` → **Para:** `frontend/`
+- **De:** `dist-main/` → **Para:** `dist/`
+- **Configurações:** Atualizar caminhos em scripts e configs
+
+

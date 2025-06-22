@@ -1,0 +1,368 @@
+---
+description: UI/UX patterns with shadcn/ui, Kanban components, layouts and visual states - activate when working with interface
+globs: 
+alwaysApply: false
+---
+# Padrões de UI/UX
+
+## Design System: shadcn/ui
+
+### Configuração Base
+- **Estilo:** new-york (clean, modern)
+- **Color Palette:** neutral (gray-based)
+- **CSS Variables:** Habilitado (dark/light theme support)
+- **Icon Library:** Lucide React
+
+### Componentes Principais Instalados
+```bash
+# Já instalados
+- Button
+- Card  
+- Dialog
+- Select
+- Checkbox
+- Separator
+
+# A instalar conforme necessário
+npx shadcn@latest add toast
+npx shadcn@latest add sheet
+npx shadcn@latest add avatar
+npx shadcn@latest add badge
+```
+
+## Layout da Aplicação
+
+### Estrutura Principal
+```
+┌─────────────────────────────────────────┐
+│ Header/Toolbar                          │
+├─────────┬───────────────────────────────┤
+│ Sidebar │ Kanban Board Area             │
+│         │                               │
+│ - Files │ ┌─────┐ ┌─────┐ ┌─────┐      │
+│ - Meta  │ │Fase1│ │Fase2│ │Fase3│      │
+│         │ │     │ │     │ │     │      │
+│         │ └─────┘ └─────┘ └─────┘      │
+└─────────┴───────────────────────────────┘
+```
+
+### Responsividade
+- **Desktop:** Sidebar visível, kanban em grid
+- **Tablet:** Sidebar colapsável, scroll horizontal
+- **Mobile:** Sidebar drawer, kanban stack vertical
+
+## Componentes Kanban
+
+### KanbanBoard Container
+```tsx
+// src-renderer/components/KanbanBoard.tsx
+<div className="flex h-full overflow-x-auto gap-6 p-6">
+  {phases.map(phase => (
+    <KanbanColumn key={phase.id} phase={phase} />
+  ))}
+</div>
+```
+
+### KanbanColumn (Fase)
+```tsx
+// src-renderer/components/KanbanColumn.tsx
+<Card className="min-w-[300px] max-w-[350px] flex flex-col">
+  <CardHeader className="pb-3">
+    <div className="flex items-center justify-between">
+      <CardTitle className="text-sm font-medium">
+        {phase.name}
+      </CardTitle>
+      <Button variant="ghost" size="sm">
+        <Settings className="h-4 w-4" />
+      </Button>
+    </div>
+  </CardHeader>
+  <CardContent className="flex-1 space-y-2">
+    {phase.items.map(item => (
+      item.type === 'step' ? 
+        <EtapaHeader key={item.id} step={item} /> :
+        <TaskCard key={item.id} task={item} />
+    ))}
+  </CardContent>
+</Card>
+```
+
+### TaskCard (Tarefa)
+```tsx
+// src-renderer/components/TaskCard.tsx
+<Card className="cursor-grab active:cursor-grabbing hover:shadow-md transition-shadow">
+  <CardContent className="p-3">
+    <div className="flex items-start gap-2">
+      <Checkbox 
+        checked={task.completed}
+        onCheckedChange={handleToggle}
+        className="mt-0.5"
+      />
+      <div className="flex-1 space-y-2">
+        <p className={cn(
+          "text-sm",
+          task.completed && "line-through text-muted-foreground"
+        )}>
+          {task.text}
+        </p>
+        {task.subtasks.length > 0 && (
+          <div className="space-y-1 pl-2 border-l-2 border-border">
+            {task.subtasks.map(subtask => (
+              <SubTaskItem key={subtask.id} subtask={subtask} />
+            ))}
+          </div>
+        )}
+      </div>
+    </div>
+  </CardContent>
+</Card>
+```
+
+### EtapaHeader (Separador)
+```tsx
+// src-renderer/components/EtapaHeader.tsx
+<div className="py-2">
+  <Separator />
+  <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wide py-2">
+    {step.name}
+  </h3>
+  <Separator />
+</div>
+```
+
+## Sidebar Layout
+
+### FileList Component
+```tsx
+// src-renderer/components/Sidebar.tsx
+<div className="w-64 border-r bg-background p-4">
+  <div className="space-y-4">
+    <div>
+      <h2 className="text-lg font-semibold">TaskFlow</h2>
+      <p className="text-sm text-muted-foreground">
+        Workspace: {workspaceName}
+      </p>
+    </div>
+    
+    <Button onClick={openProject} className="w-full">
+      <FolderOpen className="mr-2 h-4 w-4" />
+      Abrir Projeto
+    </Button>
+    
+    <Separator />
+    
+    <div className="space-y-2">
+      <h3 className="text-sm font-medium">Arquivos</h3>
+      {files.map(file => (
+        <FileItem key={file.path} file={file} />
+      ))}
+    </div>
+  </div>
+</div>
+```
+
+## Estados da Interface
+
+### Loading States
+```tsx
+// Skeleton para cards
+<Card className="min-w-[300px]">
+  <CardHeader>
+    <Skeleton className="h-4 w-24" />
+  </CardHeader>
+  <CardContent className="space-y-2">
+    <Skeleton className="h-16 w-full" />
+    <Skeleton className="h-16 w-full" />
+  </CardContent>
+</Card>
+```
+
+### Empty States
+```tsx
+// Quando não há projeto carregado
+<div className="flex-1 flex items-center justify-center">
+  <div className="text-center space-y-4">
+    <FolderOpen className="mx-auto h-12 w-12 text-muted-foreground" />
+    <div>
+      <h3 className="text-lg font-medium">Nenhum projeto aberto</h3>
+      <p className="text-muted-foreground">
+        Selecione uma pasta com arquivos .mdc para começar
+      </p>
+    </div>
+    <Button onClick={openProject}>
+      Abrir Projeto
+    </Button>
+  </div>
+</div>
+```
+
+### Error States
+```tsx
+// Component para erros
+<Card className="border-destructive">
+  <CardContent className="p-4">
+    <div className="flex items-center gap-2 text-destructive">
+      <AlertCircle className="h-4 w-4" />
+      <span className="text-sm font-medium">Erro ao carregar arquivo</span>
+    </div>
+    <p className="text-sm text-muted-foreground mt-1">
+      {errorMessage}
+    </p>
+  </CardContent>
+</Card>
+```
+
+## Modal e Dialogs
+
+### SettingsModal (Configurações da Regra)
+```tsx
+// src-renderer/components/SettingsModal.tsx
+<Dialog open={isOpen} onOpenChange={setIsOpen}>
+  <DialogContent className="sm:max-w-md">
+    <DialogHeader>
+      <DialogTitle>Configurações da Regra</DialogTitle>
+      <DialogDescription>
+        Edite os metadados da regra selecionada
+      </DialogDescription>
+    </DialogHeader>
+    
+    <div className="space-y-4">
+      <div>
+        <Label htmlFor="ruleType">Tipo da Regra</Label>
+        <Select value={ruleType} onValueChange={setRuleType}>
+          <SelectTrigger>
+            <SelectValue placeholder="Selecione o tipo" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="Manual">Manual</SelectItem>
+            <SelectItem value="Auto">Auto</SelectItem>
+            <SelectItem value="Generated">Generated</SelectItem>
+          </SelectContent>
+        </Select>
+      </div>
+      
+      <div>
+        <Label htmlFor="description">Descrição</Label>
+        <Textarea 
+          id="description"
+          value={description}
+          onChange={(e) => setDescription(e.target.value)}
+          placeholder="Descrição da regra..."
+        />
+      </div>
+    </div>
+    
+    <DialogFooter>
+      <Button variant="outline" onClick={() => setIsOpen(false)}>
+        Cancelar
+      </Button>
+      <Button onClick={handleSave}>
+        Salvar
+      </Button>
+    </DialogFooter>
+  </DialogContent>
+</Dialog>
+```
+
+## Feedback e Notificações
+
+### Toast Messages
+```tsx
+// Sucesso
+toast({
+  title: "Projeto salvo",
+  description: "Todas as alterações foram salvas com sucesso.",
+  variant: "default",
+});
+
+// Erro
+toast({
+  title: "Erro ao salvar",
+  description: "Não foi possível salvar o arquivo. Tente novamente.",
+  variant: "destructive",
+});
+
+// Loading
+toast({
+  title: "Salvando...",
+  description: "Aguarde enquanto salvamos as alterações.",
+  duration: Infinity, // Remover manualmente
+});
+```
+
+## Cores e Temas
+
+### CSS Variables (Tailwind)
+```css
+/* src-renderer/app/globals.css */
+:root {
+  --background: 0 0% 100%;
+  --foreground: 222.2 84% 4.9%;
+  --card: 0 0% 100%;
+  --card-foreground: 222.2 84% 4.9%;
+  --popover: 0 0% 100%;
+  --popover-foreground: 222.2 84% 4.9%;
+  --primary: 222.2 47.4% 11.2%;
+  --primary-foreground: 210 40% 98%;
+  --secondary: 210 40% 96%;
+  --secondary-foreground: 222.2 47.4% 11.2%;
+  --muted: 210 40% 96%;
+  --muted-foreground: 215.4 16.3% 46.9%;
+  --accent: 210 40% 96%;
+  --accent-foreground: 222.2 47.4% 11.2%;
+  --destructive: 0 84.2% 60.2%;
+  --destructive-foreground: 210 40% 98%;
+  --border: 214.3 31.8% 91.4%;
+  --input: 214.3 31.8% 91.4%;
+  --ring: 222.2 84% 4.9%;
+  --radius: 0.5rem;
+}
+```
+
+### Status Colors
+- **Pendente:** `bg-yellow-50 border-yellow-200 text-yellow-800`
+- **Completo:** `bg-green-50 border-green-200 text-green-800`
+- **Erro:** `bg-red-50 border-red-200 text-red-800`
+- **Info:** `bg-blue-50 border-blue-200 text-blue-800`
+
+## Acessibilidade
+
+### ARIA Labels
+```tsx
+<Button 
+  aria-label="Configurações da fase"
+  variant="ghost" 
+  size="sm"
+>
+  <Settings className="h-4 w-4" />
+</Button>
+```
+
+### Keyboard Navigation
+- **Tab:** Navegar entre elementos
+- **Enter/Space:** Ativar botões e checkboxes
+- **Escape:** Fechar modals
+- **Arrow Keys:** Navegar em listas (futuro)
+
+### Screen Reader Support
+- **Landmarks:** `main`, `aside`, `nav`
+- **Headings:** Hierarquia H1 → H6 correta
+- **Live Regions:** Para feedback dinâmico
+
+## Performance
+
+### Lazy Loading
+```tsx
+// Components grandes apenas quando necessário
+const SettingsModal = lazy(() => import('./SettingsModal'));
+const KanbanBoard = lazy(() => import('./KanbanBoard'));
+```
+
+### Memoização
+```tsx
+// Evitar re-renders desnecessários
+const TaskCard = memo(({ task, onToggle }) => {
+  // Component implementation
+});
+```
+
