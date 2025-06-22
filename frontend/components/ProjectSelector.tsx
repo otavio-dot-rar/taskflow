@@ -11,7 +11,7 @@ import {
 } from "@/components/ui/card";
 import { FolderIcon, AlertCircleIcon } from "lucide-react";
 import { WorkspaceData } from "../types/workspace";
-import { KanbanBoard } from "./KanbanBoard";
+import { WorkspaceDashboard } from "./WorkspaceDashboard";
 
 export function ProjectSelector() {
   const [loading, setLoading] = useState(false);
@@ -100,8 +100,11 @@ export function ProjectSelector() {
           )}
         </Card>
 
-        {/* Kanban Board */}
-        <KanbanBoard workspace={workspace} />
+        {/* Workspace Dashboard */}
+        <WorkspaceDashboard
+          workspace={workspace}
+          onChangeProject={() => setWorkspace(null)}
+        />
       </div>
     );
   }
