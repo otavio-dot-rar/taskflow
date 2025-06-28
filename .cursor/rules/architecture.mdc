@@ -35,6 +35,7 @@ webPreferences: {
 ### Renderer Process ([frontend/](mdc:frontend))
 Interface React/Next.js que executa:
 - **UI Components com shadcn/ui**
+- **Sistema de múltiplas views** (Dashboard, Kanban, Timeline, List)
 - **Gerenciamento de estado da aplicação**
 - **Comunicação segura via IPC**
 
@@ -125,6 +126,28 @@ app.on("web-contents-created", (_event, contents) => {
 - **lazy loading:** Janela só aparece quando pronta (`show: false`)
 - **preload minimalista:** Apenas APIs necessárias expostas
 - **DevTools:** Apenas em desenvolvimento
+
+## Sistema de Views (Implementado)
+
+### Arquitetura de Visualizações
+- **WorkspaceDashboard:** Layout principal com sidebar
+- **ViewSwitcher:** Toggle entre visualizações
+- **Dashboard View:** Visualização principal (tabela + estatísticas)
+- **Kanban View:** Visualização alternativa (colunas por fase)
+- **Timeline/List Views:** Planejadas para futuro
+
+### Componentes Principais
+```typescript
+// Sistema de views implementado
+type ViewMode = 'dashboard' | 'kanban' | 'timeline' | 'list';
+
+// Componentes atuais
+- WorkspaceDashboard.tsx  // Layout principal
+- DashboardView.tsx       // View principal  
+- KanbanBoard.tsx         // View alternativa
+- ViewSwitcher.tsx        // Toggle de views
+- Sidebar.tsx             // Navegação lateral
+```
 
 
 

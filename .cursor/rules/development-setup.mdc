@@ -5,6 +5,12 @@ alwaysApply: false
 ---
 # Configuração de Desenvolvimento
 
+## 📊 Status Atual
+- ✅ **Setup completo** e funcionando
+- ✅ **Scripts de desenvolvimento** estáveis
+- ✅ **Build system** operacional
+- 🎯 **Preparado para Fase 4** (IA integration)
+
 ## Scripts Principais
 
 ### Desenvolvimento Ativo
@@ -38,7 +44,7 @@ pnpm dist                # Build final para distribuição
 
 ## Dependências Principais
 
-### Runtime Dependencies
+### Runtime Dependencies (Atuais)
 ```json
 {
   "class-variance-authority": "^0.7.1",    # shadcn/ui utility
@@ -47,7 +53,8 @@ pnpm dist                # Build final para distribuição
   "next": "15.3.4",                       # Framework UI
   "react": "^19.0.0",                     # UI Library
   "react-dom": "^19.0.0",                 # React DOM
-  "tailwind-merge": "^3.3.1"              # Tailwind utility
+  "tailwind-merge": "^3.3.1",             # Tailwind utility
+  "zustand": "^5.0.5"                     # State management (Fase 5)
 }
 ```
 
@@ -91,12 +98,14 @@ pnpm install      # Instala todas as dependências
     "skipLibCheck": true,
     "forceConsistentCasingInFileNames": true
   },
-  "include": ["src-main/**/*"],
-  "exclude": ["node_modules", "dist-main", "src-renderer"]
+  "references": [
+    { "path": "./backend" },        # Backend project
+    { "path": "./frontend" }        # Frontend project
+  ]
 }
 ```
 
-#### [src-renderer/tsconfig.json](mdc:src-renderer/tsconfig.json)
+#### [frontend/tsconfig.json](mdc:frontend/tsconfig.json)
 ```json
 {
   "extends": "../tsconfig.json",
@@ -150,17 +159,17 @@ pnpm build:next
 
 ## Configurações Específicas
 
-### Next.js ([next.config.ts](mdc:src-renderer/next.config.ts))
+### Next.js ([frontend/next.config.ts](mdc:frontend/next.config.ts))
 ```typescript
 const nextConfig: NextConfig = {
   output: "export",              # Static export para Electron
   trailingSlash: true,          # Compatibility
-  distDir: "out",               # Output directory
+  distDir: "../dist/frontend",  # Output para pasta dist unificada
   // images: { unoptimized: true } # Se usar next/image
 }
 ```
 
-### Tailwind CSS ([postcss.config.mjs](mdc:src-renderer/postcss.config.mjs))
+### Tailwind CSS ([frontend/postcss.config.mjs](mdc:frontend/postcss.config.mjs))
 ```javascript
 module.exports = {
   plugins: {
@@ -205,15 +214,62 @@ pnpm install
 
 # TypeScript issues
 # Verificar se todos os paths estão corretos
-# Verificar se dist-main/ foi compilado
+# Verificar se backend/ foi compilado para dist/
 ```
 
 ### Port Conflicts
 Se porta 3000 estiver ocupada:
 ```bash
 # Modificar package.json temporariamente
-"dev:next": "next dev src-renderer --port 3001 --turbo"
+"dev:next": "next dev frontend --port 3001 --turbo"
 
 # E main.ts URL correspondente (development)
+```
+
+## Preparação para Fase 4 (IA Integration)
+
+### Dependências Adicionais Necessárias
+```bash
+# Para integração com APIs de IA
+pnpm add openai @google/generative-ai
+
+# Para templates e geração de conteúdo
+pnpm add handlebars mustache
+
+# Para validação de schemas
+pnpm add zod
+
+# Dev dependencies para testes IA
+pnpm add -D @types/mustache
+```
+
+### Variáveis de Ambiente
+```bash
+# .env.local (criar na raiz)
+OPENAI_API_KEY=sk-...
+GOOGLE_AI_API_KEY=...
+AI_MODEL_PREFERENCE=gemini # ou openai
+```
+
+### Estrutura para Fase 4
+```
+backend/services/
+├── ai-project-generator.ts    # Serviço principal IA
+├── ai-prompt-templates.ts     # Templates de prompts
+├── ai-response-parser.ts      # Parser de respostas IA
+└── ai-validation.ts           # Validação de projetos gerados
+
+frontend/components/
+├── CreateProjectModal.tsx     # Modal para prompt IA
+├── AIGenerationProgress.tsx   # Progress indicator
+└── GeneratedProjectPreview.tsx # Preview antes de salvar
+```
+
+### Scripts de Teste IA
+```json
+{
+  "test:ai": "node scripts/test-ai-generation.js",
+  "validate:prompts": "node scripts/validate-prompt-templates.js"
+}
 ```
 

@@ -30,10 +30,14 @@ export interface ElectronAPI {
   // App básico
   getAppVersion: () => Promise<string>;
   
-  // Workspace operations
+  // Workspace operations (Implementado)
   openProjectDialog: () => Promise<string | null>;
   loadWorkspace: (projectPath: string) => Promise<WorkspaceData>;
   saveWorkspace: (workspaceData: WorkspaceData) => Promise<SaveResult>;
+  
+  // AI operations (Fase 4 - Planejado)
+  generateProject: (prompt: string) => Promise<GeneratedProject>;
+  saveGeneratedProject: (project: GeneratedProject, savePath: string) => Promise<SaveResult>;
   
   // File operations (futuro)
   watchFileChanges: (callback: (changes: FileChange[]) => void) => void;
@@ -425,6 +429,136 @@ for (const file of files) {
 
 // GOOD: Batch operation  
 await window.electronAPI.saveFiles(files);
+```
+
+## Extensão para IA (Fase 4)
+
+### Tipos para Funcionalidade IA
+```typescript
+// backend/types/ai.ts
+export interface GeneratedProject {
+  projectName: string;
+  description: string;
+  files: GeneratedMdcFile[];
+  metadata: {
+    aiModel: string;
+    generatedAt: string;
+    originalPrompt: string;
+  };
+}
+
+export interface GeneratedMdcFile {
+  fileName: string;
+  content: string; // Raw .mdc content
+  metadata: {
+    aiGenerated: true;
+    aiPrompt: string;
+  };
+}
+
+export interface AIGenerationRequest {
+  prompt: string;
+  projectType?: string;
+  complexity?: 'simple' | 'medium' | 'complex';
+  includeTests?: boolean;
+}
+```
+
+### Handlers IA (Planejados)
+```typescript
+// backend/main.ts - Fase 4
+import { AIProjectGenerator } from "./services/ai-project-generator";
+
+// Generate project with AI
+ipcMain.handle("generate-project", async (event, prompt: string) => {
+  try {
+    const generator = new AIProjectGenerator();
+    const project = await generator.generateFromPrompt(prompt);
+    
+    return {
+      success: true,
+      project,
+      message: "Projeto gerado com sucesso"
+    };
+    
+  } catch (error) {
+    console.error("Error generating project:", error);
+    return {
+      success: false,
+      error: error.message,
+      message: "Falha ao gerar projeto com IA"
+    };
+  }
+});
+
+// Save generated project
+ipcMain.handle("save-generated-project", async (event, project: GeneratedProject, savePath: string) => {
+  try {
+    const results = [];
+    
+    for (const file of project.files) {
+      const fullPath = path.join(savePath, file.fileName);
+      await fs.writeFile(fullPath, file.content, 'utf-8');
+      
+      results.push({
+        filePath: fullPath,
+        success: true,
+        savedAt: new Date().toISOString()
+      });
+    }
+    
+    return {
+      success: true,
+      results,
+      message: `${results.length} arquivo(s) criados`
+    };
+    
+  } catch (error) {
+    console.error("Error saving generated project:", error);
+    return {
+      success: false,
+      error: error.message,
+      message: "Falha ao salvar projeto gerado"
+    };
+  }
+});
+```
+
+### Fluxo de Integração IA
+```typescript
+// frontend/hooks/useAIGeneration.ts
+export function useAIGeneration() {
+  const [generating, setGenerating] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const generateProject = useCallback(async (prompt: string) => {
+    try {
+      setGenerating(true);
+      setError(null);
+      
+      const result = await window.electronAPI.generateProject(prompt);
+      
+      if (!result.success) {
+        throw new Error(result.message);
+      }
+      
+      return result.project;
+      
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Erro na geração';
+      setError(message);
+      throw err;
+    } finally {
+      setGenerating(false);
+    }
+  }, []);
+
+  return {
+    generateProject,
+    generating,
+    error
+  };
+}
 ```
 
 

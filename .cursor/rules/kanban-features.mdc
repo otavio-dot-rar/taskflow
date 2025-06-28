@@ -3,16 +3,24 @@ description: Specific Kanban functionalities, drag & drop, interactions - activa
 globs: 
 alwaysApply: false
 ---
-# Funcionalidades do Kanban
+# Funcionalidades do Kanban View
+
+## 📊 Status de Implementação
+
+### **Kanban como Opção de Visualização**
+- ✅ **Implementado:** Kanban View funcional
+- ✅ **Posição:** Segunda opção (Dashboard é principal)
+- ✅ **Toggle:** ViewSwitcher permite alternar
+- ✅ **Funcionalidades:** Drag & Drop, checkboxes, persistência
 
 ## Visão Geral das Funcionalidades
 
-### Core Features (MVP)
+### Core Features (Implementadas)
 - ✅ **Visualização:** Kanban board com colunas por Fase
-- 🔄 **Drag & Drop:** Mover tarefas entre fases
-- 🔄 **Toggle Checkboxes:** Marcar tarefas como completas
-- 🔄 **Edição de Metadados:** Modal para ruleType e description
-- 🔄 **Persistência:** Salvar alterações nos arquivos .mdc
+- ✅ **Drag & Drop:** Mover tarefas entre fases
+- ✅ **Toggle Checkboxes:** Marcar tarefas como completas
+- ✅ **ViewSwitcher:** Alternar entre Dashboard/Kanban
+- ✅ **Persistência:** Salvar alterações nos arquivos .mdc
 
 ### Future Features (Pós-MVP)
 - ❌ **Edição Inline:** Renomear tarefas diretamente
@@ -24,7 +32,7 @@ alwaysApply: false
 
 ### Configuração Básica
 ```typescript
-// src-renderer/components/KanbanBoard.tsx
+// frontend/components/KanbanBoard.tsx
 import {
   DndContext,
   closestCenter,
@@ -73,7 +81,7 @@ export function KanbanBoard() {
 
 ### Droppable Columns
 ```typescript
-// src-renderer/components/KanbanColumn.tsx
+// frontend/components/KanbanColumn.tsx
 import { useDroppable } from '@dnd-kit/core';
 
 interface KanbanColumnProps {
@@ -114,7 +122,7 @@ export function KanbanColumn({ phase, children }: KanbanColumnProps) {
 
 ### Draggable Task Cards
 ```typescript
-// src-renderer/components/TaskCard.tsx
+// frontend/components/TaskCard.tsx
 import { useDraggable } from '@dnd-kit/core';
 
 interface TaskCardProps {

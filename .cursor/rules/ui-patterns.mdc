@@ -3,366 +3,353 @@ description: UI/UX patterns with shadcn/ui, Kanban components, layouts and visua
 globs: 
 alwaysApply: false
 ---
-# Padrões de UI/UX
+# Padrões de UI/UX - Cursor TaskFlow
 
-## Design System: shadcn/ui
+## 🎨 Sistema de Design
 
-### Configuração Base
-- **Estilo:** new-york (clean, modern)
-- **Color Palette:** neutral (gray-based)
-- **CSS Variables:** Habilitado (dark/light theme support)
-- **Icon Library:** Lucide React
+### **Biblioteca de Componentes**
+- **Base:** shadcn/ui (estilo new-york)
+- **Estilização:** Tailwind CSS v4
+- **Ícones:** Lucide React
+- **Cores:** Sistema dark/light automático
 
-### Componentes Principais Instalados
-```bash
-# Já instalados
-- Button
-- Card  
-- Dialog
-- Select
-- Checkbox
-- Separator
-
-# A instalar conforme necessário
-npx shadcn@latest add toast
-npx shadcn@latest add sheet
-npx shadcn@latest add avatar
-npx shadcn@latest add badge
-```
-
-## Layout da Aplicação
-
-### Estrutura Principal
-```
-┌─────────────────────────────────────────┐
-│ Header/Toolbar                          │
-├─────────┬───────────────────────────────┤
-│ Sidebar │ Kanban Board Area             │
-│         │                               │
-│ - Files │ ┌─────┐ ┌─────┐ ┌─────┐      │
-│ - Meta  │ │Fase1│ │Fase2│ │Fase3│      │
-│         │ │     │ │     │ │     │      │
-│         │ └─────┘ └─────┘ └─────┘      │
-└─────────┴───────────────────────────────┘
-```
-
-### Responsividade
-- **Desktop:** Sidebar visível, kanban em grid
-- **Tablet:** Sidebar colapsável, scroll horizontal
-- **Mobile:** Sidebar drawer, kanban stack vertical
-
-## Componentes Kanban
-
-### KanbanBoard Container
-```tsx
-// src-renderer/components/KanbanBoard.tsx
-<div className="flex h-full overflow-x-auto gap-6 p-6">
-  {phases.map(phase => (
-    <KanbanColumn key={phase.id} phase={phase} />
-  ))}
-</div>
-```
-
-### KanbanColumn (Fase)
-```tsx
-// src-renderer/components/KanbanColumn.tsx
-<Card className="min-w-[300px] max-w-[350px] flex flex-col">
-  <CardHeader className="pb-3">
-    <div className="flex items-center justify-between">
-      <CardTitle className="text-sm font-medium">
-        {phase.name}
-      </CardTitle>
-      <Button variant="ghost" size="sm">
-        <Settings className="h-4 w-4" />
-      </Button>
-    </div>
-  </CardHeader>
-  <CardContent className="flex-1 space-y-2">
-    {phase.items.map(item => (
-      item.type === 'step' ? 
-        <EtapaHeader key={item.id} step={item} /> :
-        <TaskCard key={item.id} task={item} />
-    ))}
-  </CardContent>
-</Card>
-```
-
-### TaskCard (Tarefa)
-```tsx
-// src-renderer/components/TaskCard.tsx
-<Card className="cursor-grab active:cursor-grabbing hover:shadow-md transition-shadow">
-  <CardContent className="p-3">
-    <div className="flex items-start gap-2">
-      <Checkbox 
-        checked={task.completed}
-        onCheckedChange={handleToggle}
-        className="mt-0.5"
-      />
-      <div className="flex-1 space-y-2">
-        <p className={cn(
-          "text-sm",
-          task.completed && "line-through text-muted-foreground"
-        )}>
-          {task.text}
-        </p>
-        {task.subtasks.length > 0 && (
-          <div className="space-y-1 pl-2 border-l-2 border-border">
-            {task.subtasks.map(subtask => (
-              <SubTaskItem key={subtask.id} subtask={subtask} />
-            ))}
-          </div>
-        )}
-      </div>
-    </div>
-  </CardContent>
-</Card>
-```
-
-### EtapaHeader (Separador)
-```tsx
-// src-renderer/components/EtapaHeader.tsx
-<div className="py-2">
-  <Separator />
-  <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wide py-2">
-    {step.name}
-  </h3>
-  <Separator />
-</div>
-```
-
-## Sidebar Layout
-
-### FileList Component
-```tsx
-// src-renderer/components/Sidebar.tsx
-<div className="w-64 border-r bg-background p-4">
-  <div className="space-y-4">
-    <div>
-      <h2 className="text-lg font-semibold">TaskFlow</h2>
-      <p className="text-sm text-muted-foreground">
-        Workspace: {workspaceName}
-      </p>
-    </div>
-    
-    <Button onClick={openProject} className="w-full">
-      <FolderOpen className="mr-2 h-4 w-4" />
-      Abrir Projeto
-    </Button>
-    
-    <Separator />
-    
-    <div className="space-y-2">
-      <h3 className="text-sm font-medium">Arquivos</h3>
-      {files.map(file => (
-        <FileItem key={file.path} file={file} />
-      ))}
-    </div>
-  </div>
-</div>
-```
-
-## Estados da Interface
-
-### Loading States
-```tsx
-// Skeleton para cards
-<Card className="min-w-[300px]">
-  <CardHeader>
-    <Skeleton className="h-4 w-24" />
-  </CardHeader>
-  <CardContent className="space-y-2">
-    <Skeleton className="h-16 w-full" />
-    <Skeleton className="h-16 w-full" />
-  </CardContent>
-</Card>
-```
-
-### Empty States
-```tsx
-// Quando não há projeto carregado
-<div className="flex-1 flex items-center justify-center">
-  <div className="text-center space-y-4">
-    <FolderOpen className="mx-auto h-12 w-12 text-muted-foreground" />
-    <div>
-      <h3 className="text-lg font-medium">Nenhum projeto aberto</h3>
-      <p className="text-muted-foreground">
-        Selecione uma pasta com arquivos .mdc para começar
-      </p>
-    </div>
-    <Button onClick={openProject}>
-      Abrir Projeto
-    </Button>
-  </div>
-</div>
-```
-
-### Error States
-```tsx
-// Component para erros
-<Card className="border-destructive">
-  <CardContent className="p-4">
-    <div className="flex items-center gap-2 text-destructive">
-      <AlertCircle className="h-4 w-4" />
-      <span className="text-sm font-medium">Erro ao carregar arquivo</span>
-    </div>
-    <p className="text-sm text-muted-foreground mt-1">
-      {errorMessage}
-    </p>
-  </CardContent>
-</Card>
-```
-
-## Modal e Dialogs
-
-### SettingsModal (Configurações da Regra)
-```tsx
-// src-renderer/components/SettingsModal.tsx
-<Dialog open={isOpen} onOpenChange={setIsOpen}>
-  <DialogContent className="sm:max-w-md">
-    <DialogHeader>
-      <DialogTitle>Configurações da Regra</DialogTitle>
-      <DialogDescription>
-        Edite os metadados da regra selecionada
-      </DialogDescription>
-    </DialogHeader>
-    
-    <div className="space-y-4">
-      <div>
-        <Label htmlFor="ruleType">Tipo da Regra</Label>
-        <Select value={ruleType} onValueChange={setRuleType}>
-          <SelectTrigger>
-            <SelectValue placeholder="Selecione o tipo" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="Manual">Manual</SelectItem>
-            <SelectItem value="Auto">Auto</SelectItem>
-            <SelectItem value="Generated">Generated</SelectItem>
-          </SelectContent>
-        </Select>
-      </div>
-      
-      <div>
-        <Label htmlFor="description">Descrição</Label>
-        <Textarea 
-          id="description"
-          value={description}
-          onChange={(e) => setDescription(e.target.value)}
-          placeholder="Descrição da regra..."
-        />
-      </div>
-    </div>
-    
-    <DialogFooter>
-      <Button variant="outline" onClick={() => setIsOpen(false)}>
-        Cancelar
-      </Button>
-      <Button onClick={handleSave}>
-        Salvar
-      </Button>
-    </DialogFooter>
-  </DialogContent>
-</Dialog>
-```
-
-## Feedback e Notificações
-
-### Toast Messages
-```tsx
-// Sucesso
-toast({
-  title: "Projeto salvo",
-  description: "Todas as alterações foram salvas com sucesso.",
-  variant: "default",
-});
-
-// Erro
-toast({
-  title: "Erro ao salvar",
-  description: "Não foi possível salvar o arquivo. Tente novamente.",
-  variant: "destructive",
-});
-
-// Loading
-toast({
-  title: "Salvando...",
-  description: "Aguarde enquanto salvamos as alterações.",
-  duration: Infinity, // Remover manualmente
-});
-```
-
-## Cores e Temas
-
-### CSS Variables (Tailwind)
+### **Paleta de Cores Funcional**
 ```css
-/* src-renderer/app/globals.css */
-:root {
-  --background: 0 0% 100%;
-  --foreground: 222.2 84% 4.9%;
-  --card: 0 0% 100%;
-  --card-foreground: 222.2 84% 4.9%;
-  --popover: 0 0% 100%;
-  --popover-foreground: 222.2 84% 4.9%;
-  --primary: 222.2 47.4% 11.2%;
-  --primary-foreground: 210 40% 98%;
-  --secondary: 210 40% 96%;
-  --secondary-foreground: 222.2 47.4% 11.2%;
-  --muted: 210 40% 96%;
-  --muted-foreground: 215.4 16.3% 46.9%;
-  --accent: 210 40% 96%;
-  --accent-foreground: 222.2 47.4% 11.2%;
-  --destructive: 0 84.2% 60.2%;
-  --destructive-foreground: 210 40% 98%;
-  --border: 214.3 31.8% 91.4%;
-  --input: 214.3 31.8% 91.4%;
-  --ring: 222.2 84% 4.9%;
-  --radius: 0.5rem;
+/* Status Colors */
+--color-todo: #64748b;        /* Slate 500 - Tarefas pendentes */
+--color-progress: #3b82f6;    /* Blue 500 - Em progresso */
+--color-done: #10b981;        /* Emerald 500 - Concluídas */
+--color-blocked: #ef4444;     /* Red 500 - Bloqueadas */
+
+/* Phase Colors */
+--color-phase-1: #8b5cf6;     /* Violet 500 - Planejamento */
+--color-phase-2: #06b6d4;     /* Cyan 500 - Desenvolvimento */
+--color-phase-3: #f59e0b;     /* Amber 500 - Testes */
+--color-phase-4: #10b981;     /* Emerald 500 - Deploy */
+```
+
+## 🏗️ Layout Principal
+
+### **WorkspaceDashboard Layout**
+```
+┌─────────────────────────────────────────────────────────────┐
+│ [Logo] Cursor TaskFlow                    [View Switcher]   │
+├─────────────────────────────────────────────────────────────┤
+│ Sidebar (320px)    │ Main Content Area                      │
+│                    │                                        │
+│ • Navigation       │ ┌─ Dashboard View (default) ─────────┐ │
+│ • Project Info     │ │ Project Overview                   │ │
+│ • Quick Stats      │ │ Phase Tabs                         │ │
+│ • Actions          │ │ Task Table                         │ │
+│                    │ └────────────────────────────────────┘ │
+│                    │                                        │
+│                    │ ┌─ Kanban View (option) ─────────────┐ │
+│                    │ │ Phase Columns                      │ │
+│                    │ │ Etapa Headers                      │ │  
+│                    │ │ Task Cards                         │ │
+│                    │ └────────────────────────────────────┘ │
+└─────────────────────────────────────────────────────────────┘
+```
+
+## 📋 Sistema de Views
+
+### **1. Dashboard View (Padrão)**
+
+#### **Componente Principal: DashboardView**
+```typescript
+interface DashboardViewProps {
+  workspace: WorkspaceData;
+}
+
+// Layout: Overview + Phase Tabs + Task Table
+```
+
+#### **Elementos Visuais:**
+- **Project Overview Card**
+  - Nome do projeto
+  - Estatísticas gerais (total fases, tarefas, progresso)
+  - Progress bar visual
+  - Última atualização
+
+- **Phase Tabs**
+  - Tabs horizontais para cada fase
+  - Badge com contador de tarefas
+  - Indicador de progresso por fase
+
+- **Task Table**
+  - Colunas: Task, Status, Phase, Due Date, Progress
+  - Filtros por status e fase
+  - Ordenação por prioridade
+  - Actions (edit, complete, delete)
+
+#### **Estados Visuais:**
+```typescript
+type TaskStatus = 'todo' | 'in-progress' | 'completed' | 'blocked';
+
+// Badge Colors
+const statusColors = {
+  'todo': 'bg-slate-100 text-slate-700',
+  'in-progress': 'bg-blue-100 text-blue-700', 
+  'completed': 'bg-emerald-100 text-emerald-700',
+  'blocked': 'bg-red-100 text-red-700'
+};
+```
+
+### **2. Kanban View (Opção)**
+
+#### **Componente Principal: KanbanBoard**
+```typescript
+interface KanbanBoardProps {
+  workspace: WorkspaceData;
+}
+
+// Layout: Phase Columns → Etapa Headers → Task Cards
+```
+
+#### **Estrutura Visual:**
+- **Phase Columns** - Colunas verticais por fase
+- **Etapa Headers** - Separadores dentro das colunas
+- **Task Cards** - Cards draggable com informações
+
+#### **Drag & Drop:**
+```typescript
+// @dnd-kit implementation
+const sensors = useSensors(
+  useSensor(PointerSensor),
+  useSensor(KeyboardSensor)
+);
+
+// Permite mover tarefas entre etapas e fases
+```
+
+### **3. Timeline View (Futuro)**
+- Visualização de linha do tempo
+- Dependências entre tarefas
+- Marcos e deadlines
+
+### **4. List View (Futuro)**
+- Lista simples e compacta
+- Filtros avançados
+- Exportação facilitada
+
+## 🧩 Componentes Específicos
+
+### **Sidebar Component**
+```typescript
+interface SidebarProps {
+  workspace: WorkspaceData;
+  currentView: ViewMode;
+  onViewChange: (view: ViewMode) => void;
+  onChangeProject: () => void;
 }
 ```
 
-### Status Colors
-- **Pendente:** `bg-yellow-50 border-yellow-200 text-yellow-800`
-- **Completo:** `bg-green-50 border-green-200 text-green-800`
-- **Erro:** `bg-red-50 border-red-200 text-red-800`
-- **Info:** `bg-blue-50 border-blue-200 text-blue-800`
+#### **Seções:**
+1. **Navigation Menu**
+   - Dashboard (LayoutDashboard icon)
+   - Kanban (Kanban icon)
+   - Timeline (Calendar icon)
+   - List (List icon)
 
-## Acessibilidade
+2. **Project Information**
+   - Project path (truncated)
+   - Files count
+   - Load timestamp
+   - "Change Project" button
 
-### ARIA Labels
-```tsx
-<Button 
-  aria-label="Configurações da fase"
-  variant="ghost" 
-  size="sm"
->
-  <Settings className="h-4 w-4" />
-</Button>
+3. **Quick Statistics**
+   - Total phases
+   - Total tasks
+   - Completed tasks
+   - Progress percentage
+
+#### **Visual States:**
+```css
+/* Active nav item */
+.nav-item-active {
+  @apply bg-primary text-primary-foreground;
+}
+
+/* Hover states */
+.nav-item:hover {
+  @apply bg-muted;
+}
 ```
 
-### Keyboard Navigation
-- **Tab:** Navegar entre elementos
-- **Enter/Space:** Ativar botões e checkboxes
-- **Escape:** Fechar modals
-- **Arrow Keys:** Navegar em listas (futuro)
-
-### Screen Reader Support
-- **Landmarks:** `main`, `aside`, `nav`
-- **Headings:** Hierarquia H1 → H6 correta
-- **Live Regions:** Para feedback dinâmico
-
-## Performance
-
-### Lazy Loading
-```tsx
-// Components grandes apenas quando necessário
-const SettingsModal = lazy(() => import('./SettingsModal'));
-const KanbanBoard = lazy(() => import('./KanbanBoard'));
+### **ViewSwitcher Component**
+```typescript
+interface ViewSwitcherProps {
+  currentView: ViewMode;
+  onViewChange: (view: ViewMode) => void;
+}
 ```
 
-### Memoização
-```tsx
-// Evitar re-renders desnecessários
-const TaskCard = memo(({ task, onToggle }) => {
-  // Component implementation
-});
+#### **Design:**
+- Segmented control style
+- Icons + labels
+- Smooth transitions
+- Keyboard navigation
+
+```css
+/* Toggle button group */
+.view-switcher {
+  @apply flex items-center gap-1 bg-muted p-1 rounded-lg;
+}
+
+.view-button {
+  @apply px-3 py-2 rounded-md transition-all;
+}
+
+.view-button-active {
+  @apply bg-background shadow-sm;
+}
 ```
+
+### **TaskCard Component (Kanban)**
+```typescript
+interface TaskCardProps {
+  task: TaskItem;
+  onToggle: (taskId: string) => void;
+  onEdit: (task: TaskItem) => void;
+}
+```
+
+#### **Layout:**
+```
+┌─────────────────────────────────┐
+│ [✓] Task Title              [•] │ ← Checkbox + Menu
+│ Brief description...            │ ← Description
+│ ┌─ Progress ──────────────┐     │ ← Progress bar
+│ │████████░░░░░░░░░░░░░░░░░░░░│ 35% │
+│ └─────────────────────────┘     │
+│ #tag1 #tag2           👤 User   │ ← Tags + Assignee
+└─────────────────────────────────┘
+```
+
+#### **Estados:**
+- **Default:** Border cinza, fundo branco
+- **Completed:** Border verde, fundo verde claro, texto riscado
+- **In Progress:** Border azul, barra de progresso
+- **Blocked:** Border vermelho, ícone de warning
+
+### **EtapaHeader Component**
+```typescript
+interface EtapaHeaderProps {
+  etapa: Etapa;
+  phaseColor: string;
+}
+```
+
+#### **Design:**
+```
+┌─────────────────────────────────────────┐
+│ 📋 Etapa Name                    (3/7) │ ← Icon + Name + Progress
+│ ─────────────────────────────────────── │ ← Divider line
+└─────────────────────────────────────────┘
+```
+
+## 🎯 Padrões de Interação
+
+### **Drag & Drop (Kanban)**
+- **Visual Feedback:** Card sendo arrastado fica semi-transparente
+- **Drop Zones:** Destacadas com border pontilhado
+- **Snap Animation:** Card "snapa" para posição final
+- **Undo/Redo:** Possibilidade de desfazer movimentação
+
+### **Modal Patterns**
+- **Edit Task Modal:** Form completo para edição
+- **Confirm Dialogs:** Para ações destrutivas
+- **Loading States:** Skeleton loaders durante carregamento
+
+### **Keyboard Shortcuts**
+```typescript
+// View switching
+'Cmd/Ctrl + 1': 'Switch to Dashboard'
+'Cmd/Ctrl + 2': 'Switch to Kanban'
+'Cmd/Ctrl + 3': 'Switch to Timeline'
+'Cmd/Ctrl + 4': 'Switch to List'
+
+// Actions
+'Cmd/Ctrl + N': 'New Task'
+'Cmd/Ctrl + S': 'Save Project'
+'Cmd/Ctrl + O': 'Open Project'
+'Escape': 'Close Modal/Cancel'
+```
+
+## 📱 Responsividade Desktop
+
+### **Breakpoints:**
+```css
+/* Desktop sizes */
+sm: '1024px',   /* Small desktop */
+md: '1280px',   /* Medium desktop */  
+lg: '1440px',   /* Large desktop */
+xl: '1920px',   /* Extra large */
+```
+
+### **Layout Adaptativo:**
+- **< 1024px:** Sidebar collapses to icons only
+- **< 1280px:** Task table becomes scrollable
+- **> 1440px:** More columns visible, expanded sidebar
+
+## 🎨 Temas e Personalização
+
+### **Dark/Light Mode**
+- Detecção automática do sistema
+- Toggle manual disponível
+- Persistência da preferência
+
+### **Cores de Fase Customizáveis**
+```typescript
+interface PhaseTheme {
+  primary: string;
+  background: string; 
+  border: string;
+  text: string;
+}
+
+// Usuário pode customizar cores por fase
+```
+
+## 🔄 Estados de Loading
+
+### **Skeleton Loaders**
+- **Dashboard:** Skeleton cards para estatísticas
+- **Kanban:** Skeleton columns e cards
+- **Sidebar:** Skeleton navigation items
+
+### **Progress Indicators**
+- **Linear Progress:** Para operações com progresso conhecido
+- **Spinner:** Para operações rápidas
+- **Pulse Animation:** Para elementos carregando
+
+## ✨ Animações e Transições
+
+### **Micro-interactions**
+```css
+/* Hover effects */
+.card:hover {
+  @apply transform scale-[1.02] shadow-lg transition-all duration-200;
+}
+
+/* View transitions */
+.view-enter {
+  @apply opacity-0 transform translate-x-4;
+}
+
+.view-enter-active {
+  @apply opacity-100 transform translate-x-0 transition-all duration-300;
+}
+```
+
+### **Loading States**
+- **Fade in:** Conteúdo aparece gradualmente
+- **Slide in:** Elementos deslizam da direita
+- **Stagger:** Elementos aparecem em sequência
+
+---
+
+**Última Atualização:** 22/01/2025  
+**Padrões Baseados:** Material Design 3, Human Interface Guidelines  
+**Acessibilidade:** WCAG 2.1 AA Compliant
 

@@ -28,6 +28,8 @@ backend/
 ├── main.ts                 # Entry point principal do Electron
 ├── preload.ts             # Bridge IPC segura
 ├── services/              # Lógica de negócio (parser .mdc, etc.)
+│   ├── mdc-parser.ts      # Parser .mdc (✅ implementado)
+│   └── ai-project-generator.ts  # Gerador IA (📋 planejado Fase 4)
 ├── types/                 # Tipos TypeScript específicos do main
 ├── utils/                 # Utilitários do processo main
 └── tsconfig.json          # Config TypeScript específico do backend
@@ -48,7 +50,16 @@ frontend/
 │   ├── globals.css       # Estilos globais Tailwind
 │   └── favicon.ico       # Ícone da aplicação
 ├── components/           # Componentes React
-│   └── ui/              # Componentes shadcn/ui
+│   ├── ui/              # Componentes shadcn/ui
+│   ├── WorkspaceDashboard.tsx  # Layout principal (✅ implementado)
+│   ├── DashboardView.tsx       # View principal (✅ implementado)
+│   ├── KanbanBoard.tsx         # View Kanban (✅ implementado)
+│   ├── ViewSwitcher.tsx        # Toggle views (✅ implementado)
+│   ├── Sidebar.tsx             # Navegação lateral (✅ implementado)
+│   ├── ProjectSelector.tsx     # Seleção projeto (✅ implementado)
+│   ├── TaskCard.tsx            # Cards de tarefas (✅ implementado)
+│   ├── KanbanColumn.tsx        # Colunas Kanban (✅ implementado)
+│   └── EtapaHeader.tsx         # Headers etapas (✅ implementado)
 ├── lib/                 # Utilitários e configurações
 │   └── utils.ts         # Funções utilitárias (cn, etc.)
 ├── hooks/               # Custom React hooks

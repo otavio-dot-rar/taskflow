@@ -3,122 +3,198 @@ description: MVP development plan with detailed phases, stages and tasks - activ
 globs: 
 alwaysApply: false
 ---
-# Plano de Desenvolvimento MVP
+# Plano de MVP Completo: Cursor TaskFlow v2.0 (Visão Híbrida)
 
-## Status Atual: Fase 1 🔄 Em Progresso (Etapa 1.2 Completa)
+## 🎯 Visão e Fluxo de Trabalho
 
-**Fundação Electron + Next.js funcionando perfeitamente:**
+O **Cursor TaskFlow** é uma ferramenta híbrida de planejamento de ponta a ponta, oferecendo **duas portas de entrada principais**:
 
-- [x] Electron 36.5.0 + Next.js 15.3.4
-- [x] TypeScript configurado com estrutura frontend/backend
-- [x] shadcn/ui instalado e configurado
-- [x] Scripts de desenvolvimento funcionais (`pnpm dev`)
-- [x] IPC básico implementado e testado
-- [x] Aplicação desktop abre e funciona
-- [x] Estrutura de arquivos migrada para padrão da comunidade (frontend/backend)
+### 🔄 **Fluxo 1: Organizar Projeto Existente**
+```
+Pasta do Projeto → Scanner .mdc → Parser → Dashboard/Kanban → Edição → Save
+```
 
-## Fase 1: Leitura e Visualização (Read-Only)
+### 🤖 **Fluxo 2: Criar Plano do Zero com IA**
+```
+Prompt do Usuário → IA (Gemini/OpenAI) → .mdc files → Parser → Dashboard → Edição → Save
+```
 
-### Etapa 1.1: Preparação das Dependências [x] Completa
+### 🖥️ **Tela Inicial Dual**
+A interface inicial apresenta claramente as duas opções:
+- **"Abrir Projeto Existente"** - Para projetos com arquivos .mdc
+- **"Criar Plano com IA"** - Para novos projetos via prompt
 
-- [x] **Tarefa 1.1.1:** Instalar dependências de parsing
-  ```bash
-  pnpm add gray-matter remark remark-parse remark-stringify
-  ```
-- [x] **Tarefa 1.1.2:** Instalar componentes shadcn/ui adicionais
-  ```bash
-  npx shadcn@latest add button card dialog select checkbox separator
-  ```
-- [x] **Tarefa 1.1.3:** Instalar Zustand para gerenciamento de estado
-  ```bash
-  pnpm add zustand
-  ```
+## 🏗️ Arquitetura Técnica
 
-### Etapa 1.2: Estrutura de Dados e Tipos [x] Completa
+### **Stack Principal**
+- **Framework Desktop:** Electron 36.5.0
+- **UI Framework:** Next.js 15.3.4 com App Router
+- **Linguagem:** TypeScript
+- **Componentes:** shadcn/ui (estilo new-york)
+- **Estilização:** Tailwind CSS v4
+- **Drag & Drop:** @dnd-kit
+- **Parsing:** gray-matter + remark
+- **IA:** Google Gemini API / OpenAI API
 
-- [x] **Tarefa 1.2.1:** Criar tipos TypeScript para workspace
-  - Arquivo: `frontend/types/workspace.ts` e `backend/types/workspace.ts`
-  - Tipos: `WorkspaceData`, `WorkspaceFitadata`, `ContentData`, `Phase`, `Etapa`, `TaskItem`
-- [x] **Tarefa 1.2.2:** Criar tipos TypeScript para IPC
-  - Arquivo: `backend/types/ipc.ts`
-  - Definir eventos: `OPEN_PROJECT_DIALOG`, `LOAD_WORKSPACE`, `GET_APP_VERSION`
+### **Sistema de Views**
+- **Dashboard View** (padrão) - Tabela com estatísticas
+- **Kanban View** (opção) - Colunas por fase/etapa
+- **Timeline View** (futuro) - Linha do tempo
+- **List View** (futuro) - Lista simples
 
-### Etapa 1.3: Backend - Lógica de Leitura (Main Process) [x] Completa
+## 📋 Plano de Desenvolvimento
 
-- [x] **Tarefa 1.3.1:** Dialog de seleção de pasta
-  - Atualizar `backend/main.ts` com handler `OPEN_PROJECT_DIALOG`
-  - Usar `dialog.showOpenDialog({ properties: ['openDirectory'] })`
-- [x] **Tarefa 1.3.2:** Scanner de workspace básico
-  - Implementado função `scanMdcFiles()` em `backend/main.ts`
-  - Busca recursiva por arquivos `.mdc`
-- [x] **Tarefa 1.3.3:** IPC handlers funcionais
-  - Handler `LOAD_WORKSPACE` implementado
-  - Estrutura básica de scanning e leitura de arquivos
-- [x] **Tarefa 1.3.4:** Sistema I  - Preload script configurado sem imports externos
-  - `contextBridge` funcionando corretamente
-- [ ] **Tarefa 1.3.5:** Parser completo de arquivos .mdc
-  - Usar `gray-matter` para frontmatter + content
-  - Parser hierárquico: `## Fase`, `### Etapa`, `- [ ] Tarefa`
-  - **PRÓXIMA TAREFA CRÍTICA**
+### ✅ **Fase 0: Fundação - COMPLETA**
+**Status:** 100% ✅ **Concluída**
 
-### Etapa 1.4: Frontend - Interface de Usuário 🔄 Parcial
+- [x] Setup Electron + Next.js + TypeScript
+- [x] Configuração shadcn/ui + Tailwind CSS
+- [x] Estrutura de build dual-process
+- [x] Scripts de desenvolvimento funcionais
+- [x] Janela desktop básica funcionando
 
-- zar `backend/preload.ts`
-  - API `openProjectDialog`, `loadWorkspace`, `getAppVersion` funcionais
-  - Interface `ElectronAPI` completa e testada
-- [x] **Tarefa 1.4.2:** Componente básico de seleção
-  - Criado `frontend/components/ProjectSelector.tsx`
-  - Integração inicial com IPC funcionando
-- [ ] **Tarefa 1.4.3:** Gerenciamento de estado otimizado
-  - Hook `useWorkspace` ou store Zustand
-- [ ] **Tarefa 1.4.4:** Componente Sidebar para arquivos
-- [ ] **Tarefa 1.4.5:** Componentes Kanban completos
-  - `KanbanBoard.tsx`, `KanbanColumn.tsx`, `TaskCard.tsx`, `EtapaHeader.tsx`
+### ✅ **Fase 1: Leitura e Visualização - COMPLETA**
+**Status:** 100% ✅ **Concluída**
 
-### Etapa 1.5: Renderização e Teste ❌ Pendente
+#### **1.1 Parser de Arquivos .mdc**
+- [x] **MdcParser service** - Parsing completo de metadata + content
+- [x] **Workspace scanner** - Detecção automática de arquivos .mdc
+- [x] **TypeScript types** - Interfaces completas para dados
+- [x] **Error handling** - Tratamento robusto de erros
 
-- [ ] **Tarefa 1.5.1:** Lógica de renderização
-  - Mapear JSON → componentes visuais
-  - Hierarquia: Arquivo → Fase → Etapa → Tarefa → Subtarefa
-- [ ] **Tarefa 1.5.2:** Estilização Tailwind
-  - Layout responsivo, cores consistentes
-- [ ] **Tarefa 1.5.3:** Teste com .mdc real
-  - Usar documentação do projeto ou criar arquivo teste
+#### **1.2 Interface de Visualização**
+- [x] **WorkspaceDashboard** - Layout principal com sidebar
+- [x] **DashboardView** - Visualização tabular moderna
+- [x] **KanbanBoard** - Visualização Kanban (preservada como opção)
+- [x] **ViewSwitcher** - Alternância entre visualizações
+- [x] **Sidebar** - Navegação e estatísticas do projeto
 
-**🎯 Marco Fase 1:** Kanban estático exibindo estrutura .mdc correta
+#### **1.3 Comunicação IPC**
+- [x] **Preload script** - Bridge segura entre processos
+- [x] **File operations** - Abertura de diálogos e leitura
+- [x] **Error handling** - Tratamento de erros IPC
+- [x] **Type safety** - Interfaces tipadas para comunicação
 
-## Progresso Atual Detalhado
+#### **1.4 Componentes UI**
+- [x] **ProjectSelector** - Seleção e carregamento de projetos
+- [x] **TaskCard** - Cards de tarefas com status
+- [x] **EtapaHeader** - Headers de etapas com progresso
+- [x] **KanbanColumn** - Colunas do Kanban
 
-### [x] Conquistas Técnicas
+### ✅ **Fase 2: Interatividade e Edição - COMPLETA**
+**Status:** 100% ✅ **Concluída**
 
-- **Arquitetura**: Estrutura frontend/backend seguindo padrões da comunidade 2025
-- **IPC**: Comunicação segura funcionando (testado com sucesso)
-- **Scanning**: 10 arquivos .mdc detectados no diretório `.cursor/rules`
-- **Build System**: TypeScript compilando corretamente para ambos os processos
-- **Desenvolvimento**: Workflow `pnpm dev` estável
+- [x] **Drag & Drop** - Movimentação de tarefas entre colunas
+- [x] **Checkbox editing** - Toggle de status de tarefas
+- [x] **State management** - Gerenciamento de estado em memória
+- [x] **Modal de edição** - Edição de metadados YAML
 
-### 🔄 Próximo Passo Crítico
+### ✅ **Fase 3: Persistência - COMPLETA**
+**Status:** 100% ✅ **Concluída**
 
-**Implementar Parser .mdc completo** - Esta é a tarefa que desbloqueará toda a visualização Kanban
+- [x] **MdcSerializer** - Conversão JSON → Markdown
+- [x] **File saving** - Salvamento de alterações
+- [x] **Backup system** - Sistema de backup automático
+- [x] **Change tracking** - Rastreamento de mudanças
 
+### 🚀 **Fase 4: IA Integration - EM ANDAMENTO**
+**Status:** 0% 🔄 **Próxima Prioridade**
+
+#### **4.1 UI para Geração IA**
+- [ ] **Tela inicial dual** - Botões "Abrir Existente" vs "Criar com IA"
+- [ ] **Modal de prompt** - Interface para entrada do prompt
+- [ ] **Loading states** - Indicadores de progresso da IA
+- [ ] **Preview de resultados** - Visualização antes de aceitar
+
+#### **4.2 Integração com APIs de IA**
+- [ ] **Gemini API integration** - Configuração e chamadas
+- [ ] **OpenAI fallback** - API alternativa
+- [ ] **Prompt engineering** - Templates otimizados para .mdc
+- [ ] **Response parsing** - Conversão resposta IA → estrutura .mdc
+
+#### **4.3 Geração de Arquivos**
+- [ ] **Template system** - Templates base para diferentes tipos de projeto
+- [ ] **File generation** - Criação automática de arquivos .mdc
+- [ ] **Validation** - Validação da estrutura gerada
+- [ ] **Error recovery** - Tratamento de falhas na geração
+
+#### **4.4 Fluxo Completo**
+- [ ] **Project creation workflow** - Fluxo completo de criação
+- [ ] **Save generated project** - Salvamento do projeto gerado
+- [ ] **Load into dashboard** - Carregamento automático na interface
+- [ ] **Edit generated content** - Edição pós-geração
+
+### 🔮 **Fase 5: Refinamentos (Futuro)**
+**Status:** 0% 📋 **Planejado**
+
+- [ ] **Timeline View** - Visualização de linha do tempo
+- [ ] **List View** - Visualização em lista
+- [ ] **Export features** - Exportação para outros formatos
+- [ ] **Collaboration** - Recursos de colaboração
+- [ ] **Plugins system** - Sistema de plugins
+
+## 🎯 **Próximos Passos Imediatos**
+
+### **Prioridade 1: Tela Inicial Dual**
+1. Modificar `frontend/app/page.tsx` para mostrar duas opções
+2. Criar componente `CreateProjectModal` para prompt IA
+3. Atualizar `ProjectSelector` para lidar com ambos fluxos
+
+### **Prioridade 2: Integração IA**
+1. Configurar API keys (Gemini/OpenAI)
+2. Implementar service `AIProjectGenerator`
+3. Criar templates de prompt para diferentes tipos de projeto
+
+### **Prioridade 3: Geração de Arquivos**
+1. Implementar `MdcGenerator` service
+2. Sistema de validação de estrutura gerada
+3. Integração com fluxo existente de carregamento
+
+## 📊 **Métricas de Sucesso**
+
+### **MVP Mínimo (Fase 4)**
+- ✅ Usuário pode abrir projeto existente
+- ⏳ Usuário pode gerar projeto via IA
+- ⏳ Projeto gerado carrega corretamente na interface
+- ⏳ Usuário pode editar projeto gerado
+- ⏳ Alterações são salvas corretamente
+
+### **MVP Completo**
+- Dashboard e Kanban funcionais
+- Drag & drop e edição completos
+- Geração IA robusta e confiável
+- Experiência de usuário fluida
+- Performance adequada para projetos médios
+
+## 🔧 **Notas Técnicas**
+
+### **Estrutura de Dados Mantida**
 ```typescript
-// Próxima implementação em backend/services/mdc-parser.ts
-export class MdcParser {
-  static async parseFile(filePath: string): Promise<WorkspaceFile> {
-    // gray-matter para extrair frontmatter
-    // Parser hierárquico para ## Fase, ### Etapa, - [ ] Tarefa
-    // Retornar estrutura JSON completa
-  }
+interface WorkspaceData {
+  projectPath: string;
+  files: WorkspaceFile[];
+  loadedAt: string;
+  generatedByAI?: boolean; // Nova flag
 }
 ```
 
-### 📊 Status Fases
+### **Fluxo IA → Parser**
+```typescript
+// IA gera estrutura
+const aiResponse = await generateProject(prompt);
+// Converte para arquivos .mdc
+const mdcFiles = await convertToMdcFiles(aiResponse);
+// Usa parser existente
+const workspace = await loadWorkspace(tempPath);
+```
 
-- **Fase 0**: [x] 100% Completa
-- **Fase 1**: 🔄 ~60% Completa
-  - Etapas 1.1, 1.2, 1.3: [x] Completas
-  - Etapa 1.4: 🔄 50% Completa
-  - Etapa 1.5: ❌ 0% Completa
-- **Fase 2**: ❌ 0% Completa (dependente da Fase 1)
-- **Fase 3**: ❌ 0% Completa (dependente da Fase 2)
+### **Compatibilidade**
+- Todo código existente permanece funcional
+- Parser atual funciona com arquivos gerados por IA
+- Interface atual suporta projetos de ambas origens
 
+---
+
+**Última Atualização:** 22/01/2025  
+**Próxima Revisão:** Após conclusão da Fase 4  
+**Responsável:** Equipe de Desenvolvimento
