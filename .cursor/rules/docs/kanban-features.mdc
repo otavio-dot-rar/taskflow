@@ -3,7 +3,7 @@ description: Specific Kanban functionalities, drag & drop, interactions - activa
 globs: 
 alwaysApply: false
 ---
-# Funcionalidades do Kanban View
+# Funcionalidades Kanban
 
 ## 📊 Status de Implementação
 

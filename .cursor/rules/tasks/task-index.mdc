@@ -1,0 +1,113 @@
+---
+description: 
+globs: 
+alwaysApply: false
+---
+# TaskFlow Development Index
+
+## 📊 Status Geral do Projeto
+
+### **Visão Híbrida Implementada**
+O TaskFlow é uma ferramenta híbrida com **duas portas de entrada**:
+- 🔄 **Organizar Projeto Existente** - Scanner e visualização de .mdc files
+- 🤖 **Criar Plano com IA** - Geração automática via prompt
+
+### **Progresso das Fases**
+- ✅ **Phase 0: Foundation** (100%) - Setup Electron + Next.js + TypeScript
+- ✅ **Phase 1: Reading** (100%) - Parser .mdc + Visualização
+- ✅ **Phase 2: Interaction** (100%) - Drag&drop + Edição
+- ✅ **Phase 3: Persistence** (100%) - Save + Backup system
+- 🔄 **Phase 4: AI Integration** (0%) ← **FOCO ATUAL**
+- 📋 **Phase 5: Refinements** (0%) - Zustand + Timeline view
+
+## 🎯 Foco Atual: Phase 4 - AI Integration
+
+### **Objetivo da Fase**
+Implementar a segunda porta de entrada: criação de projetos via IA.
+
+### **Tasks Principais**
+1. **Dual Home Screen** - Modificar página inicial para mostrar 2 opções
+2. **AI Modal** - Interface para captura de prompt
+3. **API Integration** - Gemini/OpenAI + prompt engineering
+4. **Project Generation** - Converter resposta IA → arquivos .mdc
+5. **Save & Load** - Integrar com fluxo existente
+
+### **Status Atual**
+- **Próxima task:** Dual Home Screen implementation
+- **Bloqueadores:** Nenhum
+- **ETA Fase 4:** 1-2 semanas
+- **Dependências:** APIs de IA (Gemini/OpenAI)
+
+## 📚 Documentação de Referência
+
+### **Arquitetura e Setup**
+- [Architecture](mdc:../docs/architecture.mdc) - Stack e princípios
+- [File Structure](mdc:../docs/file-structure.mdc) - Organização de pastas
+- [Development Setup](mdc:../docs/development-setup.mdc) - Scripts e ambiente
+
+### **Dados e Comunicação**
+- [MDC Format](mdc:../docs/mdc-format.mdc) - Especificação .mdc
+- [IPC Communication](mdc:../docs/ipc-communication.mdc) - APIs Electron
+- [State Management](mdc:../docs/state-management.mdc) - Padrões de estado
+
+### **Interface e Features**
+- [UI Patterns](mdc:../docs/ui-patterns.mdc) - Design system
+- [Kanban Features](mdc:../docs/kanban-features.mdc) - Features específicas
+
+## 🔗 Quick Links para Development
+
+### **Arquivos de Fase**
+- [Phase 4: AI Integration](mdc:phase-4-ai-integration.mdc) ← **ATUAL**
+- [Phase 5: Refinements](mdc:phase-5-refinements.mdc) ← **PRÓXIMA**
+- [Roadmap Geral](mdc:roadmap.mdc) - Visão completa
+
+### **Comandos Frequentes**
+```bash
+# Development
+pnpm dev                    # Start full development
+pnpm build                  # Build completo
+pnpm start                  # Run production build
+
+# Testing
+# Abrir este projeto no próprio TaskFlow para testar
+```
+
+## 📈 Métricas de Sucesso
+
+### **MVP Atual (Fases 1-3) ✅**
+- [x] Usuário pode abrir projeto .mdc existente
+- [x] Visualizar em Dashboard e Kanban
+- [x] Editar tarefas via drag&drop
+- [x] Salvar alterações com backup
+
+### **MVP Completo (Fase 4) 🎯**
+- [ ] Usuário pode criar projeto via prompt IA
+- [ ] IA gera estrutura .mdc válida
+- [ ] Projeto gerado carrega na interface
+- [ ] Usuário pode editar projeto gerado
+- [ ] Fluxo completo funcional
+
+## 🚀 Próximos Passos Imediatos
+
+### **1. Dual Home Screen (Esta Semana)**
+- Modificar `frontend/app/page.tsx`
+- Adicionar botões "Abrir Existente" vs "Criar com IA"
+- Manter compatibilidade com fluxo atual
+
+### **2. AI Modal (Próxima)**
+- Criar `CreateProjectModal.tsx`
+- Interface para prompt + configurações
+- Loading states e validação
+
+### **3. Backend IA (Após Modal)**
+- Setup APIs Gemini/OpenAI
+- Prompt engineering templates
+- Response parsing e validação
+
+---
+
+**Última Atualização:** 22/01/2025  
+**Responsável:** Equipe de Desenvolvimento  
+**Próxima Revisão:** Após conclusão de cada task
+
+

@@ -3,6 +3,8 @@ description:
 globs: 
 alwaysApply: false
 ---
+# Setup de Desenvolvimento
+
 # Configuração de Desenvolvimento
 
 ## 📊 Status Atual
@@ -184,7 +186,7 @@ module.exports = {
   "style": "new-york",           # Design system
   "rsc": true,                   # React Server Components
   "tailwind": {
-    "css": "src/app/globals.css",  # CSS file
+    "css": "frontend/app/globals.css",  # CSS file atualizado
     "baseColor": "neutral",        # Color palette
     "cssVariables": true          # CSS custom properties
   }

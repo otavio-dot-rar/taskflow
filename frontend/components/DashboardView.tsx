@@ -92,10 +92,6 @@ export function DashboardView({ workspace }: DashboardViewProps) {
     }
   };
 
-  const filteredTasks = selectedPhase
-    ? allTasks.filter((task) => task.phaseName === selectedPhase)
-    : allTasks;
-
   return (
     <div className="p-6 space-y-6">
       {/* Overall Progress */}
@@ -150,160 +146,158 @@ export function DashboardView({ workspace }: DashboardViewProps) {
         </CardContent>
       </Card>
 
-      {/* Project Phases */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Target className="h-5 w-5" />
-            Project Phases
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-3">
-            {phaseStats.map((phase, index) => (
-              <div
-                key={`${phase.fileName}-${phase.id}`}
-                className={cn(
-                  "p-4 rounded-lg border cursor-pointer transition-colors",
-                  selectedPhase === phase.title
-                    ? "border-blue-500 bg-blue-50 dark:bg-blue-900/20"
-                    : "border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600"
-                )}
-                onClick={() =>
-                  setSelectedPhase(
-                    selectedPhase === phase.title ? null : phase.title
-                  )
-                }
-              >
-                <div className="flex items-center justify-between mb-2">
-                  <div className="flex items-center gap-3">
-                    <div className="text-sm font-medium text-gray-500 dark:text-gray-400">
-                      Phase {index + 1}
-                    </div>
-                    <h3 className="font-semibold text-gray-900 dark:text-gray-100">
-                      {phase.title}
-                    </h3>
-                  </div>
-                  {getStatusBadge(phase.status)}
-                </div>
-
-                <div className="flex items-center justify-between mb-2">
-                  <div className="text-sm text-gray-600 dark:text-gray-400">
-                    {phase.completedTasks}/{phase.totalTasks} tasks completed
-                  </div>
-                  <div className="text-sm font-medium">{phase.progress}%</div>
-                </div>
-
-                {/* Custom progress bar */}
-                <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">
-                  <div
-                    className="bg-blue-600 dark:bg-blue-400 h-2 rounded-full transition-all duration-300"
-                    style={{ width: `${phase.progress}%` }}
-                  />
-                </div>
-
-                <div className="mt-2 text-xs text-gray-500 dark:text-gray-400">
-                  From: {phase.fileName}
-                </div>
-              </div>
-            ))}
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Task Table */}
-      <Card>
-        <CardHeader>
-          <div className="flex items-center justify-between">
+      {/* Two Column Layout: Phases + Tasks */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* Left Column: Project Phases */}
+        <Card className="h-fit">
+          <CardHeader>
             <CardTitle className="flex items-center gap-2">
-              <FileText className="h-5 w-5" />
-              Tasks {selectedPhase && `- ${selectedPhase}`}
+              <Target className="h-5 w-5" />
+              Project Phases
             </CardTitle>
-            {selectedPhase && (
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setSelectedPhase(null)}
-              >
-                Show All
-              </Button>
-            )}
-          </div>
-        </CardHeader>
-        <CardContent>
-          <div className="overflow-x-auto">
-            <table className="w-full">
-              <thead>
-                <tr className="border-b border-gray-200 dark:border-gray-700">
-                  <th className="text-left py-3 px-4 font-medium text-gray-700 dark:text-gray-300">
-                    Task
-                  </th>
-                  <th className="text-left py-3 px-4 font-medium text-gray-700 dark:text-gray-300">
-                    Phase
-                  </th>
-                  <th className="text-left py-3 px-4 font-medium text-gray-700 dark:text-gray-300">
-                    Etapa
-                  </th>
-                  <th className="text-left py-3 px-4 font-medium text-gray-700 dark:text-gray-300">
-                    Status
-                  </th>
-                  <th className="text-left py-3 px-4 font-medium text-gray-700 dark:text-gray-300">
-                    File
-                  </th>
-                </tr>
-              </thead>
-              <tbody>
-                {filteredTasks.map((task, index) => (
-                  <tr
-                    key={`${task.id}-${index}`}
-                    className="border-b border-gray-100 dark:border-gray-800 hover:bg-gray-50 dark:hover:bg-gray-800/50"
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-3">
+              {phaseStats.map((phase) => (
+                <div
+                  key={`${phase.fileName}-${phase.id}`}
+                  className={cn(
+                    "p-4 rounded-lg border cursor-pointer transition-colors",
+                    selectedPhase === phase.title
+                      ? "border-blue-500 bg-blue-50 dark:bg-blue-900/20"
+                      : "border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600"
+                  )}
+                  onClick={() =>
+                    setSelectedPhase(
+                      selectedPhase === phase.title ? null : phase.title
+                    )
+                  }
+                >
+                  <div className="flex items-center justify-between mb-2">
+                    <div className="flex items-center gap-3">
+                      <h3 className="font-semibold text-gray-900 dark:text-gray-100">
+                        {phase.title}
+                      </h3>
+                    </div>
+                    {getStatusBadge(phase.status)}
+                  </div>
+
+                  <div className="flex items-center justify-between mb-2">
+                    <div className="text-sm text-gray-600 dark:text-gray-400">
+                      {phase.completedTasks}/{phase.totalTasks} tasks completed
+                    </div>
+                    <div className="text-sm font-medium">{phase.progress}%</div>
+                  </div>
+
+                  {/* Custom progress bar */}
+                  <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">
+                    <div
+                      className="bg-blue-600 dark:bg-blue-400 h-2 rounded-full transition-all duration-300"
+                      style={{ width: `${phase.progress}%` }}
+                    />
+                  </div>
+
+                  <div className="mt-2 text-xs text-gray-500 dark:text-gray-400">
+                    From: {phase.fileName}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Right Column: Tasks - Sticky with full height */}
+        <div className="sticky top-6 h-[calc(100vh-3rem)]">
+          <Card className="h-full flex flex-col">
+            <CardHeader className="flex-shrink-0">
+              <div className="flex items-center justify-between">
+                <CardTitle className="flex items-center gap-2">
+                  <FileText className="h-5 w-5" />
+                  {selectedPhase ? `Tasks - ${selectedPhase}` : "All Tasks"}
+                </CardTitle>
+                {selectedPhase && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setSelectedPhase(null)}
                   >
-                    <td className="py-3 px-4">
-                      <div className="flex items-center gap-3">
-                        {task.completed ? (
-                          <CheckCircle2 className="h-4 w-4 text-green-600 dark:text-green-400" />
-                        ) : (
-                          <Circle className="h-4 w-4 text-gray-400" />
-                        )}
-                        <span
-                          className={cn(
-                            "text-sm",
-                            task.completed
-                              ? "line-through text-gray-500 dark:text-gray-400"
-                              : "text-gray-900 dark:text-gray-100"
-                          )}
-                        >
-                          {task.title}
-                        </span>
-                      </div>
-                    </td>
-                    <td className="py-3 px-4 text-sm text-gray-600 dark:text-gray-400">
-                      {task.phaseName}
-                    </td>
-                    <td className="py-3 px-4 text-sm text-gray-600 dark:text-gray-400">
-                      {task.etapaName}
-                    </td>
-                    <td className="py-3 px-4">
-                      {task.completed ? (
-                        <Badge className="bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300">
-                          ✅ Completed
-                        </Badge>
-                      ) : (
-                        <Badge className="bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300">
-                          🔄 In Progress
-                        </Badge>
-                      )}
-                    </td>
-                    <td className="py-3 px-4 text-sm text-gray-600 dark:text-gray-400">
-                      {task.fileName}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </CardContent>
-      </Card>
+                    Show All
+                  </Button>
+                )}
+              </div>
+            </CardHeader>
+            <CardContent className="flex-1 overflow-hidden">
+              {!selectedPhase ? (
+                <div className="h-full flex items-center justify-center text-gray-500 dark:text-gray-400">
+                  <div className="text-center">
+                    <Target className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                    <p className="text-lg font-medium mb-2">Select a Phase</p>
+                    <p className="text-sm">Click on a phase to see its tasks</p>
+                  </div>
+                </div>
+              ) : (
+                <div className="h-full overflow-y-auto pr-2 space-y-4">
+                  {/* Phase Tasks by Etapa */}
+                  {allPhases
+                    .filter((phase) => phase.title === selectedPhase)
+                    .map((phase) =>
+                      phase.etapas.map((etapa) => (
+                        <div key={etapa.id} className="space-y-3">
+                          <div className="flex items-center gap-2 pb-2 border-b border-gray-200 dark:border-gray-700 sticky top-0 bg-white dark:bg-gray-950 z-10">
+                            <h4 className="font-medium text-gray-900 dark:text-gray-100">
+                              {etapa.title}
+                            </h4>
+                            <Badge variant="outline" className="text-xs">
+                              {etapa.tasks.length} tasks
+                            </Badge>
+                          </div>
+                          <div className="space-y-2 pb-4">
+                            {etapa.tasks.map((task, taskIndex) => (
+                              <div
+                                key={`${task.id}-${taskIndex}`}
+                                className="flex items-center gap-3 p-3 rounded-lg border border-gray-100 dark:border-gray-800 hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors"
+                              >
+                                {task.completed ? (
+                                  <CheckCircle2 className="h-4 w-4 text-green-600 dark:text-green-400 flex-shrink-0" />
+                                ) : (
+                                  <Circle className="h-4 w-4 text-gray-400 flex-shrink-0" />
+                                )}
+                                <span
+                                  className={cn(
+                                    "text-sm flex-1",
+                                    task.completed
+                                      ? "line-through text-gray-500 dark:text-gray-400"
+                                      : "text-gray-900 dark:text-gray-100"
+                                  )}
+                                >
+                                  {task.title}
+                                </span>
+                                {task.completed ? (
+                                  <Badge className="bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300 text-xs">
+                                    ✅ Done
+                                  </Badge>
+                                ) : (
+                                  <Badge className="bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300 text-xs">
+                                    📋 Todo
+                                  </Badge>
+                                )}
+                              </div>
+                            ))}
+                            {etapa.tasks.length === 0 && (
+                              <div className="text-sm text-gray-500 dark:text-gray-400 italic">
+                                No tasks in this section
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      ))
+                    )}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </div>
+      </div>
     </div>
   );
 }

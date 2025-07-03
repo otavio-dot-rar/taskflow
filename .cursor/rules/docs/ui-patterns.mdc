@@ -53,7 +53,7 @@ alwaysApply: false
 
 ## 📋 Sistema de Views
 
-### **1. Dashboard View (Padrão)**
+### **🎯 Dashboard View (Principal e Recomendada)**
 
 #### **Componente Principal: DashboardView**
 ```typescript
@@ -61,26 +61,29 @@ interface DashboardViewProps {
   workspace: WorkspaceData;
 }
 
-// Layout: Overview + Phase Tabs + Task Table
+// Layout: Overview + Statistics + Task Table + Filters
 ```
 
-#### **Elementos Visuais:**
+#### **Elementos Visuais (Prioridade Alta):**
 - **Project Overview Card**
-  - Nome do projeto
-  - Estatísticas gerais (total fases, tarefas, progresso)
-  - Progress bar visual
-  - Última atualização
+  - Nome do projeto e caminho
+  - Estatísticas gerais (total arquivos, tarefas, progresso)
+  - Progress bar visual com percentual
+  - Última atualização e scan status
 
-- **Phase Tabs**
-  - Tabs horizontais para cada fase
-  - Badge com contador de tarefas
-  - Indicador de progresso por fase
+- **Statistics Cards Row**
+  - Total de arquivos .mdc carregados
+  - Tasks por status (Todo, In Progress, Done)
+  - Distribuição por prioridade
+  - Arquivos por tipo (task, documentation, reference)
 
-- **Task Table**
-  - Colunas: Task, Status, Phase, Due Date, Progress
-  - Filtros por status e fase
-  - Ordenação por prioridade
-  - Actions (edit, complete, delete)
+- **Enhanced Task Table (Foco Principal)**
+  - Colunas: File, Task Title, Status, Priority, Type, Phase
+  - Filtros inteligentes por status, priority, type, phase
+  - Ordenação por múltiplas colunas
+  - Search/filter bar no topo
+  - Paginação para muitos arquivos
+  - Actions inline (view details, edit, mark complete)
 
 #### **Estados Visuais:**
 ```typescript
@@ -95,7 +98,7 @@ const statusColors = {
 };
 ```
 
-### **2. Kanban View (Opção)**
+### **📊 Kanban View (Alternativa Secundária)**
 
 #### **Componente Principal: KanbanBoard**
 ```typescript
@@ -103,34 +106,27 @@ interface KanbanBoardProps {
   workspace: WorkspaceData;
 }
 
-// Layout: Phase Columns → Etapa Headers → Task Cards
+// Layout: Status Columns (Todo, In Progress, Done)
 ```
 
-#### **Estrutura Visual:**
-- **Phase Columns** - Colunas verticais por fase
-- **Etapa Headers** - Separadores dentro das colunas
-- **Task Cards** - Cards draggable com informações
+#### **Estrutura Visual Simplificada:**
+- **Status Columns** - 3 colunas por status (Todo, In Progress, Done)
+- **File Cards** - Cards por arquivo .mdc com resumo de tasks
+- **Quick Actions** - Mover entre status, view details
 
-#### **Drag & Drop:**
-```typescript
-// @dnd-kit implementation
-const sensors = useSensors(
-  useSensor(PointerSensor),
-  useSensor(KeyboardSensor)
-);
+**Nota:** Kanban é uma view alternativa, mas **Dashboard é a principal e mais funcional**.
 
-// Permite mover tarefas entre etapas e fases
-```
+### **🔮 Views Futuras (Baixa Prioridade)**
 
-### **3. Timeline View (Futuro)**
-- Visualização de linha do tempo
-- Dependências entre tarefas
-- Marcos e deadlines
+### **Timeline View**
+- Visualização cronológica de tasks
+- Baseada em created/updated dates
+- Dependências entre arquivos
 
-### **4. List View (Futuro)**
-- Lista simples e compacta
+### **List View**
+- Lista compacta e simples
+- Ideal para export/print
 - Filtros avançados
-- Exportação facilitada
 
 ## 🧩 Componentes Específicos
 

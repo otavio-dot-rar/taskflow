@@ -29,6 +29,11 @@ export class MdcParser {
         description: parsed.data.description || undefined,
         globs: parsed.data.globs || [],
         alwaysApply: Boolean(parsed.data.alwaysApply),
+        type: parsed.data.type,
+        status: parsed.data.status,
+        priority: parsed.data.priority,
+        phase: parsed.data.phase,
+        tags: parsed.data.tags,
       };
 
       // Parse content structure
@@ -42,7 +47,7 @@ export class MdcParser {
         lastModified: stats.mtime,
       };
     } catch (error) {
-      console.error(`Error parsing file ${filePath}:`, error);
+      console.error(`[Parser] Error parsing file ${filePath}:`, error);
       const errorMessage =
         error instanceof Error ? error.message : "Unknown error";
       throw new Error(
@@ -64,56 +69,109 @@ export class MdcParser {
     let currentEtapa: Etapa | null = null;
     let contentTitle: string | undefined;
 
-    // Extract title from first # heading if present
+    // Extract title from first # heading - this becomes the main phase
     for (const line of lines) {
       const trimmed = line.trim();
       if (trimmed.startsWith("# ")) {
         contentTitle = trimmed.substring(2).trim();
+
+        // Create main phase from the title
+        currentPhase = {
+          id: this.generateId("phase", contentTitle),
+          title: contentTitle,
+          etapas: [],
+        };
         break;
       }
+    }
+
+    // If no title found, create default phase from filename
+    if (!currentPhase) {
+      const defaultTitle = fileName.replace(".mdc", "").replace(/-/g, " ");
+      currentPhase = {
+        id: this.generateId("phase", defaultTitle),
+        title: defaultTitle,
+        etapas: [],
+      };
     }
 
     for (let i = 0; i < lines.length; i++) {
       const line = lines[i];
       const trimmed = line.trim();
 
-      // Skip empty lines
-      if (!trimmed) continue;
+      // Skip empty lines and the main title (already processed)
+      if (!trimmed || trimmed.startsWith("# ")) continue;
 
-      // Parse ## Fase
+      // Parse ## sections
       if (trimmed.startsWith("## ")) {
-        // Save previous phase if exists
-        if (currentPhase && currentEtapa) {
+        const sectionTitle = trimmed.substring(3).trim();
+
+        // Save previous etapa before creating new one
+        if (currentEtapa) {
           currentPhase.etapas.push(currentEtapa);
         }
-        if (currentPhase) {
-          phases.push(currentPhase);
-        }
 
-        // Start new phase
-        const phaseTitle = trimmed.substring(3).trim();
-        currentPhase = {
-          id: this.generateId("phase", phaseTitle),
-          title: phaseTitle,
-          etapas: [],
-        };
-        currentEtapa = null;
+        // Check if this is a Task (🔧 Task X.Y: format)
+        const taskMatch = sectionTitle.match(/^🔧\s+Task\s+[\d.]+:\s*(.+)$/);
+        if (taskMatch) {
+          // This is a Task - create etapa for it
+          const taskName = taskMatch[1].trim();
+          currentEtapa = {
+            id: this.generateId("etapa", `task-${taskName}`),
+            title: sectionTitle, // Keep full "🔧 Task X.Y: Name" format
+            tasks: [],
+          };
+        } else {
+          // This is a regular section - create etapa
+          currentEtapa = {
+            id: this.generateId("etapa", sectionTitle),
+            title: sectionTitle,
+            tasks: [],
+          };
+        }
       }
 
-      // Parse ### Etapa
+      // Parse ### sections (subsections within tasks/etapas)
       else if (trimmed.startsWith("### ")) {
-        // Save previous etapa if exists
-        if (currentPhase && currentEtapa) {
-          currentPhase.etapas.push(currentEtapa);
+        const subsectionTitle = trimmed.substring(4).trim();
+        const cleanTitle = subsectionTitle.replace(/\*\*/g, "").trim();
+
+        // Skip status lines and implementation sections, but keep sections that might contain tasks
+        if (
+          cleanTitle.startsWith("Status:") ||
+          cleanTitle === "Objetivo" ||
+          cleanTitle === "Implementação" ||
+          cleanTitle === "Como Testar" ||
+          cleanTitle.startsWith("Arquivos a") ||
+          cleanTitle.startsWith("Design da") ||
+          cleanTitle.startsWith("Código de")
+        ) {
+          continue;
         }
 
-        // Start new etapa
-        const etapaTitle = trimmed.substring(4).trim();
-        currentEtapa = {
-          id: this.generateId("etapa", etapaTitle),
-          title: etapaTitle,
-          tasks: [],
-        };
+        // For "Critérios de Aceite" and "Overview das Tasks", collect the tasks below
+        if (
+          cleanTitle === "Critérios de Aceite" ||
+          cleanTitle.includes("Critérios") ||
+          cleanTitle === "Overview das Tasks" ||
+          cleanTitle.includes("Overview")
+        ) {
+          // Don't create new etapa, just continue to collect tasks in current etapa
+          continue;
+        }
+
+        // For other important subsections that might contain tasks, don't skip them
+        if (
+          cleanTitle.includes("Tasks") ||
+          cleanTitle.includes("Tarefas") ||
+          cleanTitle.includes("Status Geral")
+        ) {
+          continue;
+        }
+
+        // For other subsections, we could create sub-etapas
+        // But for now, let's keep it simple and not create nested etapas
+        continue;
       }
 
       // Parse tasks: - [ ] or - [x]
@@ -121,7 +179,7 @@ export class MdcParser {
         if (!currentEtapa) {
           // Create default etapa if task found without etapa
           currentEtapa = {
-            id: this.generateId("etapa", "default"),
+            id: this.generateId("etapa", "tasks"),
             title: "Tarefas",
             tasks: [],
           };
@@ -134,35 +192,13 @@ export class MdcParser {
       }
     }
 
-    // Save final etapa and phase
-    if (currentPhase && currentEtapa) {
+    // Save final etapa
+    if (currentEtapa) {
       currentPhase.etapas.push(currentEtapa);
     }
-    if (currentPhase) {
-      phases.push(currentPhase);
-    }
 
-    // If no phases found but we have content, create a default phase
-    if (phases.length === 0 && markdownContent.trim()) {
-      phases.push({
-        id: this.generateId("phase", fileName),
-        title: contentTitle || fileName.replace(".mdc", ""),
-        etapas: [
-          {
-            id: this.generateId("etapa", "content"),
-            title: "Conteúdo",
-            tasks: [
-              {
-                id: this.generateId("task", "content"),
-                title: "Conteúdo do arquivo",
-                completed: false,
-                subtasks: [],
-              },
-            ],
-          },
-        ],
-      });
-    }
+    // Add the phase to phases array
+    phases.push(currentPhase);
 
     return {
       title: contentTitle,

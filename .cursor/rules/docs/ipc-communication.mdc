@@ -1,9 +1,9 @@
 ---
 description: 
 globs: 
-alwaysApply: true
+alwaysApply: false
 ---
-# Comunicação IPC (Inter-Process Communication)
+# Comunicação IPC - Electron
 
 ## Arquitetura de Segurança
 
@@ -560,5 +560,4 @@ export function useAIGeneration() {
   };
 }
 ```
-
 

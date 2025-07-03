@@ -1,170 +1,245 @@
-# 🎯 Cursor TaskFlow
+# 🎯 TaskFlow v2.0 - Hybrid Project Planning Tool
 
-**Aplicativo desktop para visualizar e gerenciar arquivos .mdc em interface Kanban**
+**Desktop application with dual entry points: organize existing projects or create new ones with AI**
 
-TaskFlow é um aplicativo Electron que transforma seus arquivos de regras do Cursor (.mdc) em uma visualização Kanban interativa, facilitando o acompanhamento de projetos e tarefas estruturadas.
+TaskFlow is an Electron app that offers **two powerful approaches** to project management:
 
-![TaskFlow Screenshot](https://via.placeholder.com/800x400/2563eb/ffffff?text=TaskFlow+Kanban+Interface)
+🔄 **Organize Existing Projects** - Transform your .mdc files into interactive Kanban visualizations  
+🤖 **Create Plans with AI** - Generate complete project structures from natural language descriptions
 
-## ✨ Funcionalidades
+![TaskFlow Screenshot](https://via.placeholder.com/800x400/2563eb/ffffff?text=TaskFlow+Multi-View+Interface)
 
-- 📁 **Seleção de Projeto** - Escolha qualquer pasta contendo arquivos .mdc
-- 🔍 **Parser Inteligente** - Extrai automaticamente frontmatter e estrutura hierárquica
-- 📋 **Visualização Kanban** - Organiza `## Fases`, `### Etapas` e `- [ ] Tarefas`
-- ✅ **Status Visual** - Checkboxes, progresso e estatísticas em tempo real
-- 🎨 **Interface Moderna** - Design limpo com shadcn/ui e Tailwind CSS
-- ⚡ **Performance** - Construído com Electron + Next.js + TypeScript
+## ✨ Features
 
-## 🚀 Como Usar
+### **Current (Phases 0-3 Complete)**
 
-### Pré-requisitos
+- 📁 **Project Selection** - Load any folder containing .mdc files
+- 🔍 **Intelligent Parser** - Extracts frontmatter and hierarchical structure automatically
+- 📊 **Multi-View System** - Dashboard (primary) and Kanban (secondary) visualizations
+- ✅ **Interactive Management** - Drag-and-drop editing with real-time updates
+- 📈 **Progress Analytics** - Statistics and progress tracking
+- 💾 **Persistent Changes** - Auto-save with backup system
+- 🎨 **Modern Interface** - Clean design with shadcn/ui and Tailwind CSS
+
+### **Coming Soon (Phase 4 - AI Integration)**
+
+- 🤖 **AI Project Generation** - Describe your project → Get complete .mdc structure
+- 🚪 **Dual Home Screen** - Clear choice between existing and AI-created projects
+- 🎯 **Smart Templates** - AI-optimized prompts for different project types
+- 🔄 **Seamless Integration** - Generated projects work with existing visualization system
+
+## 🚀 Quick Start
+
+### Prerequisites
 
 - Node.js 18+
-- pnpm (recomendado)
+- pnpm (recommended)
 
-### Instalação e Execução
+### Installation & Usage
 
 ```bash
-# Clone o repositório
+# Clone the repository
 git clone <repository-url>
 cd taskflow-app
 
-# Instale as dependências
+# Install dependencies
 pnpm install
 
-# Execute em desenvolvimento
+# Run in development
 pnpm dev
 ```
 
-O aplicativo abrirá automaticamente em uma janela Electron.
+The application will open automatically in an Electron window.
 
-### Uso Básico
+### Basic Usage
 
-1. **Selecionar Projeto**: Clique em "Selecionar Pasta" e escolha um diretório com arquivos .mdc
-2. **Visualizar Kanban**: O TaskFlow automaticamente:
-   - Escaneia todos os arquivos .mdc recursivamente
-   - Extrai metadados do frontmatter YAML
-   - Organiza o conteúdo em colunas por fase
-   - Mostra progresso e estatísticas
+1. **Select Project**: Click "Select Folder" and choose a directory with .mdc files
+2. **View Dashboard**: TaskFlow automatically:
+   - Scans all .mdc files recursively
+   - Extracts YAML frontmatter metadata
+   - Organizes content by phases and tasks
+   - Shows progress and statistics
+3. **Switch Views**: Toggle between Dashboard and Kanban views
+4. **Edit Tasks**: Drag-and-drop or click to edit task status
 
-### Estrutura .mdc Suportada
+### Supported .mdc Structure
 
 ```markdown
 ---
-description: "Descrição da regra"
-alwaysApply: true
-globs: ["*.ts", "*.tsx"]
+title: "Rule Title"
+type: "task"
+status: "in-progress"
+priority: "high"
+tags: ["development", "frontend"]
+created: "2025-01-20"
+assignee: "developer"
+phase: "implementation"
 ---
 
-# Título do Arquivo
+# File Title
 
-## Fase 1: Nome da Fase
+## Phase 1: Phase Name
 
-### Etapa 1.1: Nome da Etapa
+### Stage 1.1: Stage Name
 
-- [ ] Tarefa pendente
-- [x] Tarefa concluída
-  - [ ] Subtarefa aninhada
-  - [x] Subtarefa concluída
+- [ ] Pending task
+- [x] Completed task
+  - [ ] Nested subtask
+  - [x] Completed subtask
 
-## Fase 2: Outra Fase
+## Phase 2: Another Phase
 
-### Etapa 2.1: Outra Etapa
+### Stage 2.1: Another Stage
 
-- [ ] Mais tarefas...
+- [ ] More tasks...
 ```
 
-## 🏗️ Arquitetura
+## 🏗️ Architecture
 
-### Stack Tecnológica
+### Tech Stack
 
 - **Desktop**: Electron 36.5.0
 - **Frontend**: Next.js 15.3.4 (App Router)
 - **UI**: shadcn/ui + Tailwind CSS v4
-- **Linguagem**: TypeScript
+- **Language**: TypeScript
+- **State**: Zustand v5.0.5 (Phase 5)
 - **Parsing**: gray-matter + remark
-- **Gerenciador**: pnpm
+- **Package Manager**: pnpm
 
-### Estrutura do Projeto
+### Project Structure
 
 ```
 taskflow-app/
-├── backend/              # Processo Principal Electron
-│   ├── main.ts          # Entry point + IPC handlers
-│   ├── preload.ts       # Bridge IPC segura
-│   ├── services/        # Parser .mdc e lógica de negócio
-│   └── types/           # Tipos TypeScript backend
-├── frontend/            # Processo Renderer (Next.js)
-│   ├── app/            # Next.js App Router
-│   ├── components/     # Componentes React + shadcn/ui
-│   ├── types/          # Tipos TypeScript frontend
-│   └── lib/            # Utilitários e configurações
-└── dist/               # Build compilado
+├── backend/                    # Electron main process
+│   ├── main.ts                # Entry point + IPC handlers
+│   ├── preload.ts             # Secure IPC bridge
+│   ├── services/              # Business logic
+│   │   ├── mdc-parser.ts      # .mdc file parsing
+│   │   └── ai-project-generator.ts  # AI integration (Phase 4)
+│   └── types/                 # TypeScript definitions
+├── frontend/                   # Next.js renderer process
+│   ├── app/                   # Next.js App Router
+│   ├── components/            # React components
+│   │   ├── WorkspaceDashboard.tsx  # Main layout
+│   │   ├── DashboardView.tsx       # Primary view
+│   │   ├── KanbanBoard.tsx         # Secondary view
+│   │   └── ui/                     # shadcn/ui components
+│   └── lib/                   # Utilities
+├── dist/                      # Build output
+└── .cursor/rules/             # Development documentation
+    ├── docs/                  # Technical reference
+    │   ├── architecture.mdc   # System design
+    │   ├── mdc-format.mdc     # File format spec
+    │   └── ...               # Other docs
+    └── tasks/                 # Development phases
+        ├── task-index.mdc     # Project overview
+        ├── phase-4-ai-integration.mdc  # Current work
+        └── ...               # Phase files
 ```
 
-### Segurança
+### Security
 
 - ✅ `nodeIntegration: false`
 - ✅ `contextIsolation: true`
-- ✅ IPC através de preload script
-- ✅ Sem acesso direto ao Node.js no renderer
+- ✅ IPC through preload script only
+- ✅ No direct Node.js access in renderer
 
-## 📊 Status de Desenvolvimento
+## 📊 Development Status
 
-### ✅ Fase 1: Leitura e Visualização (Completa)
+### ✅ Phase 0: Foundation (Complete)
 
-- [x] Parser de arquivos .mdc com gray-matter
-- [x] Extração de frontmatter e conteúdo hierárquico
-- [x] Interface Kanban com colunas por fase
-- [x] Cards de tarefas com checkboxes e progresso
-- [x] Estatísticas em tempo real
+- [x] Electron + Next.js + TypeScript setup
+- [x] Build system and security configuration
+- [x] shadcn/ui integration
 
-### 🔄 Fase 2: Interatividade (Planejada)
+### ✅ Phase 1: Reading (Complete)
 
-- [ ] Drag & drop de tarefas entre fases
-- [ ] Toggle de checkboxes interativo
-- [ ] Edição de metadados via modal
+- [x] .mdc parser with gray-matter
+- [x] Frontmatter and hierarchical content extraction
+- [x] Multi-view system (Dashboard + Kanban)
+- [x] Task cards with checkboxes and progress
 
-### 🔄 Fase 3: Persistência (Planejada)
+### ✅ Phase 2: Interaction (Complete)
 
-- [ ] Salvamento de mudanças nos arquivos .mdc
-- [ ] Sistema de backup automático
-- [ ] Validação de integridade
+- [x] Drag & drop between phases
+- [x] Interactive checkbox toggling
+- [x] Metadata editing via modals
 
-## 🛠️ Scripts Disponíveis
+### ✅ Phase 3: Persistence (Complete)
+
+- [x] Save changes to .mdc files
+- [x] Automatic backup system
+- [x] Integrity validation
+
+### 🔄 Phase 4: AI Integration (In Progress)
+
+- [ ] Dual home screen implementation
+- [ ] AI modal interface
+- [ ] Backend AI setup (Gemini/OpenAI)
+- [ ] Prompt engineering
+- [ ] Project generation pipeline
+
+### 📋 Phase 5: Refinements (Planned)
+
+- [ ] Zustand state management migration
+- [ ] Timeline and List views
+- [ ] Performance optimizations
+- [ ] Advanced search and filters
+
+## 📚 Documentation
+
+The project uses a **dual documentation approach**:
+
+- **`docs/`** - Stable technical reference (architecture, patterns, APIs)
+- **`tasks/`** - Dynamic development phases with detailed implementation plans
+
+### Quick Navigation
+
+- [📊 Project Status](/.cursor/rules/tasks/task-index.mdc) - Current progress and next steps
+- [🏗️ Architecture](/.cursor/rules/docs/architecture.mdc) - System design and stack
+- [🎨 UI Patterns](/.cursor/rules/docs/ui-patterns.mdc) - Design system and components
+- [🔧 Development Setup](/.cursor/rules/docs/development-setup.mdc) - Environment and scripts
+
+## 🛠️ Available Scripts
 
 ```bash
-# Desenvolvimento
-pnpm dev                 # Inicia Next.js + Electron
-pnpm dev:next           # Apenas Next.js (localhost:3000)
-pnpm dev:electron       # Apenas Electron
+# Development
+pnpm dev                 # Start Next.js + Electron
+pnpm dev:next           # Next.js only (localhost:3000)
+pnpm dev:electron       # Electron only
 
 # Build
-pnpm build              # Build completo
-pnpm build:backend      # Compila backend TypeScript
-pnpm build:frontend     # Build estático Next.js
+pnpm build              # Complete build
+pnpm build:backend      # Compile backend TypeScript
+pnpm build:frontend     # Static Next.js build
 
-# Produção
-pnpm start              # Executa versão compilada
-pnpm package            # Gera executável (electron-builder)
+# Production
+pnpm start              # Run compiled version
+pnpm dist               # Generate executable (electron-builder)
 ```
 
-## 🤝 Contribuição
+## 🤝 Contributing
 
-1. Fork o projeto
-2. Crie uma branch para sua feature (`git checkout -b feature/AmazingFeature`)
-3. Commit suas mudanças (`git commit -m 'Add some AmazingFeature'`)
-4. Push para a branch (`git push origin feature/AmazingFeature`)
-5. Abra um Pull Request
+This project follows a **phase-based development approach**. Check the [task index](/.cursor/rules/tasks/task-index.mdc) for current priorities and the [Phase 4 plan](/.cursor/rules/tasks/phase-4-ai-integration.mdc) for detailed implementation tasks.
 
-## 📝 Licença
+1. Fork the project
+2. Create a feature branch (`git checkout -b feature/AmazingFeature`)
+3. Commit your changes (`git commit -m 'Add some AmazingFeature'`)
+4. Push to the branch (`git push origin feature/AmazingFeature`)
+5. Open a Pull Request
 
-Este projeto está sob a licença MIT. Veja o arquivo `LICENSE` para mais detalhes.
+## 📝 License
 
-## 🙏 Agradecimentos
+This project is licensed under the MIT License. See the `LICENSE` file for details.
 
-- [Cursor](https://cursor.sh) - Pela inspiração dos arquivos .mdc
-- [Electron](https://electronjs.org) - Framework desktop
-- [Next.js](https://nextjs.org) - Framework React
-- [shadcn/ui](https://ui.shadcn.com) - Componentes UI
-- [Tailwind CSS](https://tailwindcss.com) - Framework CSS
+## 🙏 Acknowledgments
+
+- [Cursor](https://cursor.sh) - For the inspiration of .mdc files
+- [Electron](https://electronjs.org) - Desktop framework
+- [Next.js](https://nextjs.org) - React framework
+- [shadcn/ui](https://ui.shadcn.com) - UI components
+- [Tailwind CSS](https://tailwindcss.com) - CSS framework
+
+---
+
+**Built with ❤️ using our own project as the testing ground!**

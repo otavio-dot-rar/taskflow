@@ -17,11 +17,18 @@ export interface WorkspaceFile {
 
 // Metadata from .mdc frontmatter (based on real .mdc files)
 export interface Metadata {
+  // === CURSOR FIELDS (obrigatórios para compatibilidade) ===
   description?: string; // Present only for Agent Requested rules
   globs?: string | string[]; // Usually empty
   alwaysApply: boolean; // true = Always, false = Agent Requested/Manual
-  // Legacy/computed fields
+
+  // === TASKFLOW CORE FIELDS (nossos) ===
+  type?: "task" | "documentation" | "reference";
+  status?: "todo" | "in-progress" | "done";
   priority?: "high" | "medium" | "low";
+  phase?: string;
+
+  // Legacy/computed fields (manter compatibilidade)
   tags?: string[];
 }
 

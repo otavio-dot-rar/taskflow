@@ -1,0 +1,997 @@
+---
+description: 
+globs: 
+alwaysApply: false
+---
+# Phase 4: AI Integration
+
+## 🎯 Objetivo da Fase
+
+Implementar a **segunda porta de entrada** do TaskFlow: criação de projetos via IA.
+Usuário poderá descrever seu projeto em linguagem natural e receber uma estrutura .mdc completa e funcional.
+
+## 📚 Refentação
+
+- @Architecture - -process
+- @MDC Format - Es+ extensões IA
+- @IPC Communication - APIs + extensões IA
+- @UI Patterns - Design system
+- @Development Setup - Dependências IA
+
+## 📋 Overview das Tasks
+
+### **Status Geral: 0% Completo**
+- [ ] **Task 4.1:** Dual Home Screen (0%)
+- [ ] **Task 4.2:** AI Modal Interface (0%)
+- [ ] **Task 4.3:** Backend IA Setup (0%)
+- [ ] **Task 4.4:** Prompt Engineering (0%)
+- [ ] **Task 4.5:** Project Generation (0%)
+- [ ] **Task 4.6:** Integration & Testing (0%)
+
+---
+
+## 🔧 Task 4.1: Dual Home Screen
+
+### **Status: 📋 PRÓXIMA**
+**Prioridade:** Alta | **ETA:** 1-2 dias
+
+### **Objetivo**
+Modificar a página inicial para apresentar claramente as duas opções de entrada:
+- **"Abrir Projeto Existente"** - Fluxo atual
+- **"Criar Plano com IA"** - Novo fluxo
+
+### **Implementação**
+
+#### **Arquivos a Modificar**
+```
+frontend/app/page.tsx           # Página principal
+frontend/components/ProjectSelector.tsx  # Atualizar componente existente
+```
+
+#### **Design da Interface**
+```typescript
+// Estrutura da nova página inicial
+<div className="home-container">
+  <header>
+    <h1>TaskFlow</h1>
+    <p>Organize projetos existentes ou crie novos com IA</p>
+  </header>
+  
+  <div className="dual-options">
+    <div className="option-card existing">
+      <Icon name="folder-open" />
+      <h2>Abrir Projeto Existente</h2>
+      <p>Visualize e organize arquivos .mdc do seu projeto</p>
+      <Button onClick={handleOpenExisting}>Selecionar Pasta</Button>
+    </div>
+    
+    <div className="option-card ai-create">
+      <Icon name="sparkles" />
+      <h2>Criar Plano com IA</h2>
+      <p>Descreva seu projeto e receba uma estrutura completa</p>
+      <Button onClick={handleCreateWithAI}>Começar com IA</Button>
+    </div>
+  </div>
+</div>
+```
+
+#### **Código de Implementação**
+```typescript
+// frontend/app/page.tsx
+'use client';
+
+import { useState } from 'react';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { FolderOpen, Sparkles } from 'lucide-react';
+import { WorkspaceDashboard } from '@/components/WorkspaceDashboard';
+import { CreateProjectModal } from '@/components/CreateProjectModal';
+
+export default function HomePage() {
+  const [mode, setMode] = useState<'select' | 'existing' | 'ai-create'>('select');
+  const [showAIModal, setShowAIModal] = useState(false);
+
+  const handleOpenExisting = async () => {
+    // Usar fluxo existente do ProjectSelector
+    setMode('existing');
+  };
+
+  const handleCreateWithAI = () => {
+    setShowAIModal(true);
+  };
+
+  if (mode === 'existing') {
+    return <WorkspaceDashboard />;
+  }
+
+  return (
+    <div className="min-h-screen bg-background flex items-center justify-center p-4">
+      <div className="w-full max-w-4xl space-y-8">
+        {/* Header */}
+        <div className="text-center space-y-4">
+          <h1 className="text-4xl font-bold tracking-tight">TaskFlow</h1>
+          <p className="text-xl text-muted-foreground">
+            Organize projetos existentes ou crie novos com IA
+          </p>
+        </div>
+
+        {/* Dual Options */}
+        <div className="grid md:grid-cols-2 gap-6">
+          {/* Existing Project Option */}
+          <Card className="cursor-pointer hover:shadow-lg transition-shadow" 
+                onClick={handleOpenExisting}>
+            <CardHeader className="text-center">
+              <div className="mx-auto w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mb-4">
+                <FolderOpen className="w-8 h-8 text-primary" />
+              </div>
+              <CardTitle>Abrir Projeto Existente</CardTitle>
+              <CardDescription>
+                Visualize e organize arquivos .mdc do seu projeto
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <Button className="w-full" size="lg">
+                Selecionar Pasta
+              </Button>
+            </CardContent>
+          </Card>
+
+          {/* AI Create Option */}
+          <Card className="cursor-pointer hover:shadow-lg transition-shadow"
+                onClick={handleCreateWithAI}>
+            <CardHeader className="text-center">
+              <div className="mx-auto w-16 h-16 bg-purple-100 rounded-full flex items-center justify-center mb-4">
+                <Sparkles className="w-8 h-8 text-purple-600" />
+              </div>
+              <CardTitle>Criar Plano com IA</CardTitle>
+              <CardDescription>
+                Descreva seu projeto e receba uma estrutura completa
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <Button className="w-full" size="lg" variant="outline">
+                Começar com IA
+              </Button>
+            </CardContent>
+          </Card>
+        </div>
+      </div>
+
+      {/* AI Modal */}
+      <CreateProjectModal 
+        open={showAIModal} 
+        onOpenChange={setShowAIModal}
+        onProjectCreated={(project) => {
+          setShowAIModal(false);
+          // Load generated project
+          setMode('existing');
+        }}
+      />
+    </div>
+  );
+}
+```
+
+### **Critérios de Aceite**
+- [ ] Página inicial mostra duas opções claramente
+- [ ] Botão "Abrir Existente" mantém fluxo atual
+- [ ] Botão "Criar com IA" abre modal (Task 4.2)
+- [ ] Design responsivo e acessível
+- [ ] Transições suaves entre estados
+
+### **Como Testar**
+1. Abrir aplicação
+2. Verificar se mostra duas opções
+3. Testar fluxo existente (deve funcionar normalmente)
+4. Testar botão IA (deve abrir modal quando implementado)
+
+---
+
+## 🔧 Task 4.2: AI Modal Interface
+
+### **Status: 📋 AGUARDANDO Task 4.1**
+**Prioridade:** Alta | **ETA:** 2-3 dias
+
+### **Objetivo**
+Criar interface para captura de prompt do usuário, com validação, loading states e preview.
+
+### **Implementação**
+
+#### **Arquivos a Criar**
+```
+frontend/components/CreateProjectModal.tsx     # Modal principal
+frontend/components/AIGenerationProgress.tsx  # Loading states
+frontend/components/GeneratedProjectPreview.tsx # Preview antes de salvar
+frontend/hooks/useAIGeneration.ts             # Hook para IA
+```
+
+#### **CreateProjectModal.tsx**
+```typescript
+'use client';
+
+import { useState } from 'react';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Button } from '@/components/ui/button';
+import { Textarea } from '@/components/ui/textarea';
+import { Label } from '@/components/ui/label';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { useAIGeneration } from '@/hooks/useAIGeneration';
+import { AIGenerationProgress } from './AIGenerationProgress';
+import { GeneratedProjectPreview } from './GeneratedProjectPreview';
+
+interface CreateProjectModalProps {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  onProjectCreated: (project: any) => void;
+}
+
+export function CreateProjectModal({ open, onOpenChange, onProjectCreated }: CreateProjectModalProps) {
+  const [prompt, setPrompt] = useState('');
+  const [projectType, setProjectType] = useState('web-app');
+  const [complexity, setComplexity] = useState('medium');
+  const [step, setStep] = useState<'input' | 'generating' | 'preview'>('input');
+  const [generatedProject, setGeneratedProject] = useState(null);
+
+  const { generateProject, generating, error } = useAIGeneration();
+
+  const handleGenerate = async () => {
+    if (!prompt.trim()) return;
+    
+    try {
+      setStep('generating');
+      const project = await generateProject({
+        prompt,
+        projectType,
+        complexity
+      });
+      
+      setGeneratedProject(project);
+      setStep('preview');
+    } catch (err) {
+      console.error('Generation failed:', err);
+      setStep('input');
+    }
+  };
+
+  const handleAcceptProject = async () => {
+    if (!generatedProject) return;
+    
+    // Save and load project
+    onProjectCreated(generatedProject);
+    onOpenChange(false);
+    
+    // Reset modal
+    setPrompt('');
+    setStep('input');
+    setGeneratedProject(null);
+  };
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="max-w-4xl max-h-[90vh] overflow-hidden">
+        <DialogHeader>
+          <DialogTitle>Criar Projeto com IA</DialogTitle>
+        </DialogHeader>
+
+        {step === 'input' && (
+          <div className="space-y-6">
+            <div className="space-y-2">
+              <Label htmlFor="prompt">Descreva seu projeto</Label>
+              <Textarea
+                id="prompt"
+                placeholder="Ex: Criar um sistema de gerenciamento de tarefas para equipe de desenvolvimento, com sprints, kanban board, relatórios de progresso..."
+                value={prompt}
+                onChange={(e) => setPrompt(e.target.value)}
+                rows={6}
+                className="resize-none"
+              />
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label>Tipo de Projeto</Label>
+                <Select value={projectType} onValueChange={setProjectType}>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="web-app">Aplicação Web</SelectItem>
+                    <SelectItem value="mobile-app">App Mobile</SelectItem>
+                    <SelectItem value="desktop-app">App Desktop</SelectItem>
+                    <SelectItem value="api-backend">API/Backend</SelectItem>
+                    <SelectItem value="data-project">Projeto de Dados</SelectItem>
+                    <SelectItem value="other">Outro</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="space-y-2">
+                <Label>Complexidade</Label>
+                <Select value={complexity} onValueChange={setComplexity}>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="simple">Simples (1-2 semanas)</SelectItem>
+                    <SelectItem value="medium">Médio (1-2 meses)</SelectItem>
+                    <SelectItem value="complex">Complexo (3+ meses)</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+
+            {error && (
+              <div className="p-4 bg-destructive/10 border border-destructive/20 rounded-md">
+                <p className="text-sm text-destructive">{error}</p>
+              </div>
+            )}
+
+            <div className="flex justify-end space-x-2">
+              <Button variant="outline" onClick={() => onOpenChange(false)}>
+                Cancelar
+              </Button>
+              <Button 
+                onClick={handleGenerate}
+                disabled={!prompt.trim() || generating}
+              >
+                Gerar Projeto
+              </Button>
+            </div>
+          </div>
+        )}
+
+        {step === 'generating' && (
+          <AIGenerationProgress />
+        )}
+
+        {step === 'preview' && generatedProject && (
+          <GeneratedProjectPreview 
+            project={generatedProject}
+            onAccept={handleAcceptProject}
+            onRegenerate={() => setStep('input')}
+            onCancel={() => onOpenChange(false)}
+          />
+        )}
+      </DialogContent>
+    </Dialog>
+  );
+}
+```
+
+### **Critérios de Aceite**
+- [ ] Modal abre ao clicar "Criar com IA"
+- [ ] Textarea para prompt com validação
+- [ ] Selects para tipo e complexidade
+- [ ] Loading state durante geração
+- [ ] Preview de resultado antes de aceitar
+- [ ] Error handling para falhas
+
+---
+
+## 🔧 Task 4.3: Backend IA Setup
+
+### **Status: 📋 AGUARDANDO Task 4.2**
+**Prioridade:** Alta | **ETA:** 2-3 dias
+
+### **Objetivo**
+Configurar integração com APIs de IA (Gemini/OpenAI) e implementar serviços backend.
+
+### **Implementação**
+
+#### **Dependências a Instalar**
+```bash
+# APIs de IA
+pnpm add @google/generative-ai openai
+
+# Templates e validação
+pnpm add handlebars zod
+
+# Dev dependencies
+pnpm add -D @types/handlebars
+```
+
+#### **Variáveis de Ambiente**
+```bash
+# .env.local (criar na raiz)
+GOOGLE_AI_API_KEY=your_gemini_key_here
+OPENAI_API_KEY=your_openai_key_here
+AI_MODEL_PREFERENCE=gemini  # ou openai
+```
+
+#### **Arquivos a Criar**
+```
+backend/services/ai-project-generator.ts    # Serviço principal
+backend/services/ai-prompt-templates.ts     # Templates de prompts
+backend/services/ai-response-parser.ts      # Parser de respostas
+backend/services/ai-validation.ts           # Validação de projetos
+backend/types/ai.ts                         # Tipos TypeScript
+```
+
+#### **ai-project-generator.ts**
+```typescript
+import { GoogleGenerativeAI } from '@google/generative-ai';
+import OpenAI from 'openai';
+import { AIPromptTemplates } from './ai-prompt-templates';
+import { AIResponseParser } from './ai-response-parser';
+import { AIValidation } from './ai-validation';
+import type { GeneratedProject, AIGenerationRequest } from '../types/ai';
+
+export class AIProjectGenerator {
+  private gemini: GoogleGenerativeAI;
+  private openai: OpenAI;
+  private promptTemplates: AIPromptTemplates;
+  private responseParser: AIResponseParser;
+  private validation: AIValidation;
+
+  constructor() {
+    // Initialize AI clients
+    if (process.env.GOOGLE_AI_API_KEY) {
+      this.gemini = new GoogleGenerativeAI(process.env.GOOGLE_AI_API_KEY);
+    }
+    
+    if (process.env.OPENAI_API_KEY) {
+      this.openai = new OpenAI({
+        apiKey: process.env.OPENAI_API_KEY,
+      });
+    }
+
+    this.promptTemplates = new AIPromptTemplates();
+    this.responseParser = new AIResponseParser();
+    this.validation = new AIValidation();
+  }
+
+  async generateFromPrompt(request: AIGenerationRequest): Promise<GeneratedProject> {
+    try {
+      // 1. Build prompt from template
+      const systemPrompt = this.promptTemplates.buildPrompt(request);
+      
+      // 2. Call AI API
+      const aiResponse = await this.callAI(systemPrompt, request.prompt);
+      
+      // 3. Parse response to structured data
+      const parsedProject = await this.responseParser.parse(aiResponse);
+      
+      // 4. Validate and fix issues
+      const validatedProject = await this.validation.validateAndFix(parsedProject);
+      
+      // 5. Convert to .mdc files
+      const mdcFiles = await this.convertToMdcFiles(validatedProject);
+      
+      return {
+        projectName: validatedProject.name,
+        description: validatedProject.description,
+        files: mdcFiles,
+        metadata: {
+          aiModel: this.getPreferredModel(),
+          generatedAt: new Date().toISOString(),
+          originalPrompt: request.prompt
+        }
+      };
+      
+    } catch (error) {
+      console.error('AI generation failed:', error);
+      throw new Error(`Falha na geração: ${error.message}`);
+    }
+  }
+
+  private async callAI(systemPrompt: string, userPrompt: string): Promise<string> {
+    const preferredModel = process.env.AI_MODEL_PREFERENCE || 'gemini';
+    
+    if (preferredModel === 'gemini' && this.gemini) {
+      return this.callGemini(systemPrompt, userPrompt);
+    } else if (this.openai) {
+      return this.callOpenAI(systemPrompt, userPrompt);
+    } else {
+      throw new Error('Nenhuma API de IA configurada');
+    }
+  }
+
+  private async callGemini(systemPrompt: string, userPrompt: string): Promise<string> {
+    const model = this.gemini.getGenerativeModel({ model: 'gemini-pro' });
+    
+    const fullPrompt = `${systemPrompt}\n\nUser Request: ${userPrompt}`;
+    const result = await model.generateContent(fullPrompt);
+    const response = await result.response;
+    
+    return response.text();
+  }
+
+  private async callOpenAI(systemPrompt: string, userPrompt: string): Promise<string> {
+    const completion = await this.openai.chat.completions.create({
+      model: 'gpt-4',
+      messages: [
+        { role: 'system', content: systemPrompt },
+        { role: 'user', content: userPrompt }
+      ],
+      temperature: 0.7,
+      max_tokens: 4000
+    });
+
+    return completion.choices[0]?.message?.content || '';
+  }
+
+  private getPreferredModel(): string {
+    return process.env.AI_MODEL_PREFERENCE || 'gemini';
+  }
+
+  private async convertToMdcFiles(project: any): Promise<any[]> {
+    // Convert structured project to .mdc files
+    // Implementation details...
+    return [];
+  }
+}
+```
+
+### **Critérios de Aceite**
+- [ ] APIs Gemini e OpenAI configuradas
+- [ ] Variáveis de ambiente funcionando
+- [ ] Serviço principal implementado
+- [ ] Templates de prompt básicos
+- [ ] Error handling robusto
+
+---
+
+## 🔧 Task 4.4: Prompt Engineering
+
+### **Status: 📋 AGUARDANDO Task 4.3**
+**Prioridade:** Média | **ETA:** 2-3 dias
+
+### **Objetivo**
+Desenvolver templates de prompt otimizados para gerar estruturas .mdc válidas e úteis.
+
+### **Implementação**
+
+#### **ai-prompt-templates.ts**
+```typescript
+import Handlebars from 'handlebars';
+import type { AIGenerationRequest } from '../types/ai';
+
+export class AIPromptTemplates {
+  private baseTemplate: HandlebarsTemplateDelegate;
+  private typeSpecificTemplates: Map<string, HandlebarsTemplateDelegate>;
+
+  constructor() {
+    this.initializeTemplates();
+  }
+
+  buildPrompt(request: AIGenerationRequest): string {
+    const context = {
+      projectType: request.projectType,
+      complexity: request.complexity,
+      includeTests: request.includeTests || false,
+      currentDate: new Date().toISOString().split('T')[0]
+    };
+
+    // Use type-specific template if available
+    const typeTemplate = this.typeSpecificTemplates.get(request.projectType || 'general');
+    if (typeTemplate) {
+      return typeTemplate(context);
+    }
+
+    // Fallback to base template
+    return this.baseTemplate(context);
+  }
+
+  private initializeTemplates() {
+    // Base system prompt
+    const basePromptText = `
+You are an expert project manager and software architect. Your task is to create a comprehensive project structure in .mdc (Markdown with metadata) format.
+
+## Context
+- Project Type: {{projectType}}
+- Complexity: {{complexity}}
+- Include Tests: {{includeTests}}
+- Date: {{currentDate}}
+
+## .mdc Format Specification
+Each .mdc file must have:
+1. YAML frontmatter with metadata
+2. Markdown content with phases and tasks
+
+### Required Metadata Fields:
+\`\`\`yaml
+---
+title: "File Title"
+type: "rule" | "task" | "documentation"
+status: "todo" | "in-progress" | "done"
+priority: "low" | "medium" | "high"
+tags: ["tag1", "tag2"]
+created: "YYYY-MM-DD"
+updated: "YYYY-MM-DD"
+assignee: "person"
+estimatedHours: number
+dependencies: ["file1.mdc", "file2.mdc"]
+phase: "phase-name"
+aiGenerated: true
+aiPrompt: "original user prompt"
+---
+\`\`\`
+
+### Content Structure:
+- Use # for main title
+- Use ## for phases/sections
+- Use ### for tasks/subtasks
+- Use - [ ] for checkboxes
+- Include clear descriptions and acceptance criteria
+
+## Your Task
+Generate a complete project structure with 5-10 .mdc files that cover:
+1. Project overview and architecture
+2. Development phases broken down into tasks
+3. Technical specifications
+4. Testing strategy (if requested)
+5. Documentation requirements
+
+Make sure each file is self-contained but references related files appropriately.
+
+## Output Format
+Provide a JSON structure with this format:
+\`\`\`json
+{
+  "projectName": "Project Name",
+  "description": "Brief project description",
+  "files": [
+    {
+      "fileName": "01-project-overview.mdc",
+      "content": "full .mdc content with frontmatter and markdown"
+    },
+    {
+      "fileName": "02-architecture.mdc", 
+      "content": "full .mdc content..."
+    }
+  ]
+}
+\`\`\`
+
+Be specific, practical, and ensure all generated content follows the .mdc format exactly.
+`;
+
+    this.baseTemplate = Handlebars.compile(basePromptText);
+
+    // Type-specific templates
+    this.typeSpecificTemplates = new Map();
+    
+    // Web App specific template
+    const webAppTemplate = `
+${basePromptText}
+
+## Web Application Specific Guidelines:
+- Include frontend, backend, and database phases
+- Consider responsive design requirements  
+- Include deployment and CI/CD tasks
+- Add performance optimization tasks
+- Include security considerations
+- Consider SEO and accessibility requirements
+
+Focus on modern web development practices and include realistic time estimates.
+`;
+
+    this.typeSpecificTemplates.set('web-app', Handlebars.compile(webAppTemplate));
+
+    // Add more type-specific templates...
+  }
+}
+```
+
+### **Critérios de Aceite**
+- [ ] Templates para diferentes tipos de projeto
+- [ ] Prompts geram .mdc válidos
+- [ ] Estrutura JSON consistente
+- [ ] Metadados corretos
+- [ ] Conteúdo útil e realista
+
+---
+
+## 🔧 Task 4.5: Project Generation
+
+### **Status: 📋 AGUARDANDO Task 4.4**
+**Prioridade:** Alta | **ETA:** 3-4 dias
+
+### **Objetivo**
+Implementar parsing de respostas IA, validação e conversão para arquivos .mdc.
+
+### **Implementação**
+
+#### **ai-response-parser.ts**
+```typescript
+import { z } from 'zod';
+
+// Zod schemas for validation
+const MdcFileSchema = z.object({
+  fileName: z.string().regex(/\.mdc$/),
+  content: z.string().min(1)
+});
+
+const GeneratedProjectSchema = z.object({
+  projectName: z.string().min(1),
+  description: z.string().min(1),
+  files: z.array(MdcFileSchema).min(1)
+});
+
+export class AIResponseParser {
+  async parse(aiResponse: string): Promise<any> {
+    try {
+      // Extract JSON from response (might be wrapped in markdown)
+      const jsonMatch = aiResponse.match(/```json\s*([\s\S]*?)\s*```/);
+      const jsonString = jsonMatch ? jsonMatch[1] : aiResponse;
+      
+      // Parse JSON
+      const parsed = JSON.parse(jsonString);
+      
+      // Validate structure
+      const validated = GeneratedProjectSchema.parse(parsed);
+      
+      return validated;
+      
+    } catch (error) {
+      console.error('Failed to parse AI response:', error);
+      throw new Error('Resposta da IA em formato inválido');
+    }
+  }
+}
+```
+
+#### **ai-validation.ts**
+```typescript
+import matter from 'gray-matter';
+
+export class AIValidation {
+  async validateAndFix(project: any): Promise<any> {
+    const fixedFiles = [];
+    
+    for (const file of project.files) {
+      try {
+        // Validate .mdc structure
+        const fixed = await this.validateMdcFile(file);
+        fixedFiles.push(fixed);
+      } catch (error) {
+        console.warn(`Skipping invalid file ${file.fileName}:`, error);
+      }
+    }
+    
+    if (fixedFiles.length === 0) {
+      throw new Error('Nenhum arquivo .mdc válido foi gerado');
+    }
+    
+    return {
+      ...project,
+      files: fixedFiles
+    };
+  }
+
+  private async validateMdcFile(file: any): Promise<any> {
+    try {
+      // Parse frontmatter
+      const parsed = matter(file.content);
+      
+      // Validate required metadata
+      const metadata = parsed.data;
+      if (!metadata.title) {
+        metadata.title = this.generateTitleFromFileName(file.fileName);
+      }
+      if (!metadata.type) {
+        metadata.type = 'task';
+      }
+      if (!metadata.status) {
+        metadata.status = 'todo';
+      }
+      if (!metadata.created) {
+        metadata.created = new Date().toISOString().split('T')[0];
+      }
+      if (!metadata.aiGenerated) {
+        metadata.aiGenerated = true;
+      }
+      
+      // Reconstruct file with fixed metadata
+      const fixedContent = matter.stringify(parsed.content, metadata);
+      
+      return {
+        ...file,
+        content: fixedContent
+      };
+      
+    } catch (error) {
+      throw new Error(`Invalid .mdc format in ${file.fileName}`);
+    }
+  }
+
+  private generateTitleFromFileName(fileName: string): string {
+    return fileName
+      .replace(/\.mdc$/, '')
+      .replace(/^\d+-/, '')
+      .replace(/-/g, ' ')
+      .replace(/\b\w/g, l => l.toUpperCase());
+  }
+}
+```
+
+### **Critérios de Aceite**
+- [ ] Parser extrai JSON de respostas IA
+- [ ] Validação Zod funcional
+- [ ] Correção automática de metadados
+- [ ] Error handling robusto
+- [ ] Arquivos .mdc válidos gerados
+
+---
+
+## 🔧 Task 4.6: Integration & Testing
+
+### **Status: 📋 AGUARDANDO Task 4.5**
+**Prioridade:** Alta | **ETA:** 2-3 dias
+
+### **Objetivo**
+Integrar todos os componentes, implementar IPC handlers e testar fluxo completo.
+
+### **Implementação**
+
+#### **IPC Handlers (backend/main.ts)**
+```typescript
+// Add to existing handlers
+import { AIProjectGenerator } from './services/ai-project-generator';
+
+// Generate project with AI
+ipcMain.handle('generate-project', async (event, request: AIGenerationRequest) => {
+  try {
+    const generator = new AIProjectGenerator();
+    const project = await generator.generateFromPrompt(request);
+    
+    return {
+      success: true,
+      project,
+      message: 'Projeto gerado com sucesso'
+    };
+    
+  } catch (error) {
+    console.error('Error generating project:', error);
+    return {
+      success: false,
+      error: error.message,
+      message: 'Falha ao gerar projeto com IA'
+    };
+  }
+});
+
+// Save generated project
+ipcMain.handle('save-generated-project', async (event, project: GeneratedProject, savePath: string) => {
+  try {
+    const fs = require('fs').promises;
+    const path = require('path');
+    
+    // Create project directory
+    await fs.mkdir(savePath, { recursive: true });
+    
+    const results = [];
+    for (const file of project.files) {
+      const fullPath = path.join(savePath, file.fileName);
+      await fs.writeFile(fullPath, file.content, 'utf-8');
+      
+      results.push({
+        filePath: fullPath,
+        success: true,
+        savedAt: new Date().toISOString()
+      });
+    }
+    
+    return {
+      success: true,
+      results,
+      message: `${results.length} arquivo(s) criados`
+    };
+    
+  } catch (error) {
+    console.error('Error saving generated project:', error);
+    return {
+      success: false,
+      error: error.message,
+      message: 'Falha ao salvar projeto gerado'
+    };
+  }
+});
+```
+
+#### **Frontend Hook (useAIGeneration.ts)**
+```typescript
+import { useState, useCallback } from 'react';
+import type { AIGenerationRequest, GeneratedProject } from '../types/ai';
+
+export function useAIGeneration() {
+  const [generating, setGenerating] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const generateProject = useCallback(async (request: AIGenerationRequest): Promise<GeneratedProject> => {
+    try {
+      setGenerating(true);
+      setError(null);
+      
+      const result = await window.electronAPI.generateProject(request);
+      
+      if (!result.success) {
+        throw new Error(result.message);
+      }
+      
+      return result.project;
+      
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Erro na geração';
+      setError(message);
+      throw err;
+    } finally {
+      setGenerating(false);
+    }
+  }, []);
+
+  const saveProject = useCallback(async (project: GeneratedProject, savePath: string) => {
+    try {
+      const result = await window.electronAPI.saveGeneratedProject(project, savePath);
+      
+      if (!result.success) {
+        throw new Error(result.message);
+      }
+      
+      return result;
+      
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Erro ao salvar';
+      setError(message);
+      throw err;
+    }
+  }, []);
+
+  return {
+    generateProject,
+    saveProject,
+    generating,
+    error
+  };
+}
+```
+
+### **Critérios de Aceite**
+- [ ] IPC handlers funcionais
+- [ ] Frontend integrado com backend
+- [ ] Fluxo completo funcional
+- [ ] Error handling em todos os pontos
+- [ ] Projeto gerado carrega no dashboard
+- [ ] Performance aceitável
+
+---
+
+## 📈 Métricas de Sucesso da Fase
+
+### **Funcionalidades Principais**
+- [ ] Usuário pode criar projeto via prompt IA
+- [ ] IA gera estrutura .mdc válida e útil
+- [ ] Projeto gerado carrega corretamente na interface
+- [ ] Usuário pode editar projeto gerado normalmente
+- [ ] Performance adequada (< 30s para geração)
+
+### **Qualidade Técnica**
+- [ ] Error handling robusto em todos os pontos
+- [ ] Validação completa de dados
+- [ ] Código bem documentado e testável
+- [ ] Integração limpa com sistema existente
+- [ ] Logs adequados para debugging
+
+### **Experiência do Usuário**
+- [ ] Interface intuitiva e responsiva
+- [ ] Feedback claro durante loading
+- [ ] Mensagens de erro úteis
+- [ ] Fluxo suave sem quebras
+- [ ] Compatibilidade com fluxo existente
+
+---
+
+## 🚀 Próximos Passos Após Fase 4
+
+1. **Phase 5: Refinements** - Zustand, Timeline view, melhorias UX
+2. **Performance Optimization** - Cache, otimizações IA
+3. **Advanced Features** - Templates personalizados, colaboração
+4. **Testing & QA** - Testes automatizados, validação
+
+---
+
+**Última Atualização:** 22/01/2025  
+**Próxima Revisão:** Após conclusão de cada task  
+**Responsável:** Equipe de Desenvolvimento
+
+

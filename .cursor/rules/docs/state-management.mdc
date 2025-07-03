@@ -3,7 +3,7 @@ description: React state management, Context API, custom hooks - activate when w
 globs: 
 alwaysApply: false
 ---
-# Gerenciamento de Estado com Zustand
+# Gerenciamento de Estado - React Context
 
 ## 📊 Status de Implementação
 
