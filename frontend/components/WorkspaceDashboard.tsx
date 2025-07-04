@@ -6,6 +6,7 @@ import { Sidebar } from "./Sidebar";
 import { DashboardView } from "./DashboardView";
 import { KanbanBoard } from "./KanbanBoard";
 import { ViewSwitcher } from "./ViewSwitcher";
+import { SaveButton, useSaveStatus } from "./SaveButton";
 
 export type ViewMode = "dashboard" | "kanban" | "timeline" | "list";
 
@@ -19,6 +20,7 @@ export function WorkspaceDashboard({
   onChangeProject,
 }: WorkspaceDashboardProps) {
   const [currentView, setCurrentView] = useState<ViewMode>("dashboard");
+  const { hasUnsavedChanges } = useSaveStatus(workspace);
 
   const renderCurrentView = () => {
     switch (currentView) {
@@ -70,10 +72,27 @@ export function WorkspaceDashboard({
               </p>
             </div>
 
-            <ViewSwitcher
-              currentView={currentView}
-              onViewChange={setCurrentView}
-            />
+            <div className="flex items-center gap-4">
+              <SaveButton
+                workspace={workspace}
+                hasUnsavedChanges={hasUnsavedChanges}
+                onSaveComplete={(success) => {
+                  if (success) {
+                    // Mark files as saved by updating their hasChanges flag
+                    workspace.files.forEach(file => {
+                      if (file.hasChanges) {
+                        file.hasChanges = false;
+                      }
+                    });
+                  }
+                }}
+              />
+              
+              <ViewSwitcher
+                currentView={currentView}
+                onViewChange={setCurrentView}
+              />
+            </div>
           </div>
         </div>
 
